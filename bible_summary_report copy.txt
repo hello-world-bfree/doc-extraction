@@ -1,0 +1,87 @@
+BIBLE PARSING SUMMARY REPORT
+============================================================
+
+Translation: RSVCE
+Language: en
+Total chunks extracted: 5167
+
+TESTAMENT DISTRIBUTION:
+  Old Testament: 4060 chunks
+  New Testament: 1107 chunks
+
+BOOKS WITH CHUNKS:
+  1 Chronicles: 159 chunks
+  1 Corinthians: 58 chunks
+  1 John: 16 chunks
+  1 Kings: 164 chunks
+  1 Maccabees: 137 chunks
+  1 Peter: 14 chunks
+  1 Samuel: 164 chunks
+  1 Thessalonians: 13 chunks
+  1 Timothy: 15 chunks
+  2 Chronicles: 181 chunks
+  2 Corinthians: 40 chunks
+  2 John: 2 chunks
+  2 Kings: 164 chunks
+  2 Maccabees: 106 chunks
+  2 Peter: 10 chunks
+  2 Samuel: 138 chunks
+  2 Thessalonians: 8 chunks
+  2 Timothy: 11 chunks
+  3 John: 2 chunks
+  Acts: 147 chunks
+  Amos: 11 chunks
+  Baruch: 27 chunks
+  Colossians: 13 chunks
+  Daniel: 92 chunks
+  Deuteronomy: 169 chunks
+  Ecclesiastes: 32 chunks
+  Ephesians: 20 chunks
+  Esther: 58 chunks
+  Exodus: 201 chunks
+  Ezekiel: 233 chunks
+  Ezra: 54 chunks
+  Galatians: 20 chunks
+  Genesis: 247 chunks
+  Habakkuk: 3 chunks
+  Haggai: 8 chunks
+  Hebrews: 39 chunks
+  Hosea: 17 chunks
+  Isaiah: 119 chunks
+  James: 15 chunks
+  Jeremiah: 205 chunks
+  Job: 74 chunks
+  Joel: 5 chunks
+  John: 119 chunks
+  Jonah: 9 chunks
+  Joshua: 131 chunks
+  Jude: 4 chunks
+  Judges: 129 chunks
+  Judith: 75 chunks
+  Lamentations: 7 chunks
+  Leviticus: 148 chunks
+  Luke: 153 chunks
+  Malachi: 12 chunks
+  Mark: 93 chunks
+  Matthew: 146 chunks
+  Micah: 7 chunks
+  Nahum: 3 chunks
+  Nehemiah: 80 chunks
+  Numbers: 211 chunks
+  Obadiah: 1 chunks
+  Philemon: 3 chunks
+  Philippians: 14 chunks
+  Proverbs: 58 chunks
+  Psalms: 185 chunks
+  Revelation: 68 chunks
+  Romans: 58 chunks
+  Ruth: 17 chunks
+  Sirach: 90 chunks
+  Song of Solomon: 8 chunks
+  Titus: 6 chunks
+  Tobit: 47 chunks
+  Wisdom of Solomon: 33 chunks
+  Zechariah: 38 chunks
+  Zephaniah: 3 chunks
+
+Processed 73 out of 73 available books
