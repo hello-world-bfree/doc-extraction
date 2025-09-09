@@ -26,6 +26,12 @@ NEW in 1.4.8:
 - Tighten punctuation spacing; "3 ." → "3."
 - Optional enumerator stripping in NOTES sections
 - Micro de-dup: skip chunk if fully contained in previous chunk for same spine item
+
+NEW in 1.4.9 (footnotes):
+- Detect sentence-final footnote markers: "… 10", "…[10]", "…(10)"
+- Build a global footnote index from all spine items
+- Attach matched footnote text to each citing chunk (`footnotes_attached`)
+- Metadata includes `footnote_index_stats`
 """
 
 import os
@@ -35,7 +41,7 @@ import json
 import hashlib
 import logging
 import unicodedata
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Tuple
 
@@ -46,7 +52,7 @@ from ebooklib import epub
 
 # ====================== Versions & Logging ======================
 
-PARSER_VERSION = "1.4.8-catholic-notables-batch"
+PARSER_VERSION = "1.4.9-catholic-notables-batch"
 MD_SCHEMA_VERSION = "2025-09-08"
 
 LOGGER = logging.getLogger("epub_parser")
@@ -72,6 +78,15 @@ MONTHS = (
 
 SOFT_HYPHEN = "\u00ad"
 ZW_SPACES = r"[\u200B-\u200D\u2060\uFEFF]"  # zero-widths
+FOOTNOTE_MAX = 999  # cap to reduce false positives
+
+# Footnote indexing helpers
+FN_ID_PATTERNS = [
+    r'^(?:fn|footnote|note|n)[-_]?(?P<n>\d+)$',
+    r'^(?:endnote)[-_]?(?P<n>\d+)$',
+]
+FN_LI_SELECTOR = 'ol li[id], ul li[id]'
+FN_ASIDE_SELECTOR = 'aside[epub|type="footnote"], aside[epub\\:type="footnote"]'
 
 def sha1(x: bytes) -> str:
     return hashlib.sha1(x).hexdigest()
@@ -124,7 +139,7 @@ def is_heading_tag(tag_name: str) -> bool:
     return tag_name in {f"h{i}" for i in range(1, 7)}
 
 def clean_toc_title(s: str) -> str:
-    """Strip leading numbers/ordinals like '1.', '1)', 'I.', 'Chapter 5:' etc."""
+    """Strip leading numbers/ordinals like '1.', '1) ', 'I.) ', 'Chapter 5: ...' from TOC titles."""
     if not s: return s
     s = clean_text(s)
     # Remove "Chapter 5: ..." or "Chap. 5 - ..."
@@ -135,17 +150,7 @@ def clean_toc_title(s: str) -> str:
     s = re.sub(r'^\s*\d+\s+', '', s)
     return s
 
-# ---------- Chunk enrich helpers ----------
-
-def _heading_path(h: Dict[str, str]) -> str:
-    parts = [h.get(f"level_{i}", "") for i in range(1, 7)]
-    return " / ".join([p for p in parts if p])
-
-def _hier_depth(h: Dict[str, str]) -> int:
-    for i in range(6, 0, -1):
-        if h.get(f"level_{i}"):
-            return i
-    return 0
+# ---------- Sentence splitting & footnote detection ----------
 
 def _split_sents(t: str) -> List[str]:
     # Cheap sentence splitter
@@ -154,6 +159,67 @@ def _split_sents(t: str) -> List[str]:
 
 def _normalize_ascii(t: str) -> str:
     return unicodedata.normalize("NFKD", t).encode("ascii", "ignore").decode("ascii")
+
+def detect_trailing_footnotes(sentence: str) -> List[int]:
+    """
+    Detect footnote numbers at end of a sentence.
+    Recognizes: "... 10", "...[10]", "...(10)" (optionally followed by period/quote).
+    Guards:
+      - ignore verse-like endings "... 3:16"
+      - ignore decimals "... 3.14"
+      - cap number at FOOTNOTE_MAX
+    """
+    tail = sentence.strip()
+
+    # bail if we see a colon near the end (likely verse refs like 3:16)
+    if re.search(r'[:]\s*\d{1,4}\s*["”\'.)]*$', tail):
+        return []
+
+    # bail if decimal like 3.14 at end
+    if re.search(r'\b\d+\.\d+\s*["”\'.)]*$', tail):
+        return []
+
+    # collect patterns near the very end (allow quotes/period after)
+    candidates: List[str] = []
+    patterns = [
+        r'(?:\(|\[)\s*(\d{1,4})\s*(?:\)|\])\s*["”\'.)]*$',   # (10) or [10]
+        r'[\s,;](\d{1,4})\s*["”\'.)]*$',                     # ... 10."
+    ]
+    for pat in patterns:
+        m = re.search(pat, tail)
+        if m:
+            candidates.append(m.group(1))
+
+    nums: List[int] = []
+    for c in candidates:
+        try:
+            n = int(c)
+            if 1 <= n <= FOOTNOTE_MAX:
+                nums.append(n)
+        except ValueError:
+            pass
+
+    # dedupe while preserving order
+    seen = set()
+    out: List[int] = []
+    for n in nums:
+        if n not in seen:
+            out.append(n); seen.add(n)
+    return out
+
+def _match_footnote_id(node_id: str) -> Optional[int]:
+    if not node_id: return None
+    for pat in FN_ID_PATTERNS:
+        m = re.match(pat, node_id.strip().lower())
+        if m:
+            try:
+                return int(m.group('n'))
+            except Exception:
+                return None
+    return None
+
+def _text_of(el) -> str:
+    return clean_text(el.get_text(" ", strip=True)) if el else ""
 
 # ---------- Extractors ----------
 
@@ -268,6 +334,7 @@ class MetadataExtractor:
         self._extract_related_documents(all_text)
         self._infer_geographic_focus(all_text)
         self._calculate_stats(chunks)
+        self._rollup_footnotes(chunks)
         return self.metadata
 
     def _infer_document_type(self, text: str):
@@ -311,7 +378,7 @@ class MetadataExtractor:
             "Moral Theology": [r"\bmoral\b", r"\bethics\b", r"\bconscience\b", r"\bvirtue\b"],
             "Scripture": [r"\bscripture\b", r"\bverbum\b", r"\bdivine revelation\b"],
             "Canon Law": [r"canon law", r"code of canon law", r"\bcic\b", r"\bcceo\b"],
-            "Prayer": [r"\bprayer\b", r"\boratio\b", r"\bdevotion\b", r"\bro\sary\b"],
+            "Prayer": [r"\bprayer\b", r"\boratio\b", r"\bdevotion\b', r'\bro\sary\b"],
             "Council Documents": [r"vatican\s*(?:i|ii)", r"council of trent", r"lumen gentium", r"dei verbum"],
         }
         tl = text.lower()
@@ -358,6 +425,18 @@ class MetadataExtractor:
         pages = max(1, total_words // 250)
         self.metadata["pages"] = f"approximately {pages}"
 
+    def _rollup_footnotes(self, chunks: List[Dict]):
+        all_nums: List[int] = []
+        for ch in chunks:
+            f = ch.get("footnote_citations", {})
+            all_nums.extend(f.get("all", []))
+        if all_nums:
+            counts = Counter(all_nums)
+            self.metadata["footnotes_summary"] = {
+                "unique_citations": sorted(int(n) for n in set(all_nums)),
+                "counts": {str(k): int(v) for k, v in sorted(counts.items())}
+            }
+
 # ====================== EPUB Parser ======================
 
 class EpubParser:
@@ -388,6 +467,10 @@ class EpubParser:
 
         # Optional debug dump flag (set from CLI in main)
         self.debug_dump: bool = False
+
+        # Footnote indexes
+        self.footnote_index: Dict[int, Dict[str, Any]] = {}              # n -> {text, href, id}
+        self.href_local_fns: Dict[str, Dict[int, Dict[str, Any]]] = {}   # href -> n -> {...}
 
     # ---------- load & toc ----------
 
@@ -440,6 +523,54 @@ class EpubParser:
             for n in self.book.toc:
                 walk(n)
 
+    # ---------- footnote indexing (pre-sanitize) ----------
+
+    def _index_footnotes_in_item(self, item) -> None:
+        href = self._norm_href(item.get_name())
+        try:
+            soup = BeautifulSoup(item.get_content(), "lxml")
+        except Exception:
+            try:
+                import html5lib  # noqa: F401
+                soup = BeautifulSoup(item.get_content(), "html5lib")
+            except Exception:
+                soup = BeautifulSoup(item.get_content(), "html.parser")
+
+        local: Dict[int, Dict[str, Any]] = {}
+
+        # Case A: explicit footnote asides
+        for aside in soup.select(FN_ASIDE_SELECTOR):
+            node_id = (aside.get("id") or "").strip()
+            n = _match_footnote_id(node_id)
+            if n:
+                txt = _text_of(aside)
+                local[n] = {"text": txt, "href": href, "id": node_id}
+
+        # Case B: lists of notes (ol/ul li#fn1 etc.)
+        for li in soup.select(FN_LI_SELECTOR):
+            node_id = (li.get("id") or "").strip()
+            n = _match_footnote_id(node_id)
+            if n and n not in local:
+                txt = _text_of(li)
+                local[n] = {"text": txt, "href": href, "id": node_id}
+
+        # Case C: generic elements with note-like IDs
+        for el in soup.find_all(id=True):
+            node_id = (el.get("id") or "").strip()
+            n = _match_footnote_id(node_id)
+            if n and n not in local:
+                txt = _text_of(el)
+                if len(txt) >= 10:  # avoid container headings
+                    local[n] = {"text": txt, "href": href, "id": node_id}
+
+        if local:
+            self.href_local_fns[href] = local
+            # Merge into global, prefer longest text
+            for n, rec in local.items():
+                old = self.footnote_index.get(n)
+                if (not old) or (len(rec["text"]) > len(old["text"])):
+                    self.footnote_index[n] = rec
+
     # ---------- sanitization ----------
 
     def _sanitize_dom(self, soup: BeautifulSoup):
@@ -462,6 +593,15 @@ class EpubParser:
 
         spine_ids = [sid for (sid, _) in self.book.spine if sid != "nav"]
         id_to_item = {it.get_id(): it for it in self.book.get_items()}
+
+        # Pre-pass: index footnotes across all spine items (using raw content)
+        for sid, _ in self.book.spine:
+            item = id_to_item.get(sid)
+            if item:
+                try:
+                    self._index_footnotes_in_item(item)
+                except Exception as e:
+                    LOGGER.debug("Footnote index error on %s: %s", sid, e)
 
         iterator = spine_ids if len(spine_ids) < 3 else tqdm(spine_ids, desc="Processing documents")
 
@@ -506,6 +646,13 @@ class EpubParser:
             "score": round(self.doc_quality_score, 4),
             "route": self.doc_route,
         }
+        # Footnote index stats
+        if self.footnote_index:
+            self.metadata["footnote_index_stats"] = {
+                "unique_indexed": len(self.footnote_index),
+                "by_source": {href: len(local) for href, local in self.href_local_fns.items()}
+            }
+
         LOGGER.info("✓ Extracted %d paragraphs; route=%s (%.2f)", len(self.chunks), self.doc_route, self.doc_quality_score)
 
     def _reset_lower_hierarchy(self):
@@ -565,6 +712,32 @@ class EpubParser:
                 if text and (text == last["text"] or text in last["text"]):
                     return
 
+            # --- sentence split + trailing footnote detection
+            sents = _split_sents(text)
+            by_sentence = []
+            footnote_all: List[int] = []
+            for idx, s in enumerate(sents):
+                nums = detect_trailing_footnotes(s)
+                if nums:
+                    by_sentence.append({"index": idx, "numbers": nums})
+                    for n in nums:
+                        if n not in footnote_all:
+                            footnote_all.append(n)
+
+            # Attach actual footnote text (prefer local href, then global)
+            attached = []
+            if footnote_all:
+                local_map = self.href_local_fns.get(href, {})
+                for n in footnote_all:
+                    rec = local_map.get(n) or self.footnote_index.get(n)
+                    if rec and rec.get("text"):
+                        attached.append({
+                            "n": n,
+                            "text": rec["text"],
+                            "source_href": rec["href"],
+                            "id": rec["id"],
+                        })
+
             global_para_id += 1
             chunk = {
                 "stable_id": stable_id(href, str(order_idx), str(global_para_id), text[:80]),
@@ -583,10 +756,16 @@ class EpubParser:
                 "hierarchy_depth": _hier_depth(h),
                 "doc_stable_id": self.provenance.get("doc_id", ""),
             }
-            sents = _split_sents(chunk["text"])
+            # Attach sentences and normalized text
             chunk["sentence_count"] = len(sents)
             chunk["sentences"] = sents[:6]
             chunk["normalized_text"] = _normalize_ascii(chunk["text"])
+
+            if footnote_all:
+                chunk["footnote_citations"] = {"all": footnote_all, "by_sentence": by_sentence}
+                if attached:
+                    chunk["footnotes_attached"] = attached
+
             self.chunks.append(chunk)
 
         body = soup.find("body") or soup
@@ -680,8 +859,8 @@ class EpubParser:
                 raw_txt = clean_text((soup.get_text(" ") or "")[:2000])
                 with open(f"./debug/{file_base}_{order_idx:03d}_{os.path.basename(href) or 'doc'}.raw.txt", "w", encoding="utf-8") as f:
                     f.write(raw_txt)
-                from collections import Counter
-                tag_counts = Counter([el.name.lower() for el in soup.find_all(True)])
+                from collections import Counter as _C
+                tag_counts = _C([el.name.lower() for el in soup.find_all(True)])
                 stats = {
                     "file": os.path.basename(self.epub_path),
                     "href": href,
@@ -798,6 +977,18 @@ class EpubParser:
         with open(filename, "w", encoding="utf-8") as f:
             f.write("\n".join(lines))
         LOGGER.info("✓ Created %s", filename)
+
+# ---------- small helpers used above ----------
+
+def _heading_path(h: Dict[str, str]) -> str:
+    parts = [h.get(f"level_{i}", "") for i in range(1, 7)]
+    return " / ".join([p for p in parts if p])
+
+def _hier_depth(h: Dict[str, str]) -> int:
+    for i in range(6, 0, -1):
+        if h.get(f"level_{i}"):
+            return i
+    return 0
 
 # ====================== CLI ======================
 
