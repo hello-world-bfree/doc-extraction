@@ -16,6 +16,7 @@ from typing import Dict, List, Any
 from src.extraction.extractors.base import BaseExtractor
 from src.extraction.extractors.epub import EpubExtractor
 from src.extraction.core.models import Chunk, Metadata, Provenance, Quality
+from tests.helpers import create_test_chunk, create_test_metadata
 
 
 class MockExtractor(BaseExtractor):
@@ -46,17 +47,17 @@ class MockExtractor(BaseExtractor):
         if not self._loaded:
             raise RuntimeError("Must call load() before parse()")
 
-        # Create mock chunks
+        # Create mock chunks using helper
         self.chunks = [
-            Chunk(
-                chunk_id="chunk1",
+            create_test_chunk(
+                stable_id="chunk1",
                 paragraph_id=1,
                 text="This is test chunk one.",
                 hierarchy={"level_1": "Chapter 1", "level_2": "", "level_3": "", "level_4": "", "level_5": "", "level_6": ""},
                 word_count=5
             ),
-            Chunk(
-                chunk_id="chunk2",
+            create_test_chunk(
+                stable_id="chunk2",
                 paragraph_id=2,
                 text="This is test chunk two.",
                 hierarchy={"level_1": "Chapter 1", "level_2": "", "level_3": "", "level_4": "", "level_5": "", "level_6": ""},
@@ -74,7 +75,7 @@ class MockExtractor(BaseExtractor):
         if not self._parsed:
             raise RuntimeError("Must call parse() before extract_metadata()")
 
-        self.metadata = Metadata(
+        self.metadata = create_test_metadata(
             title="Test Document",
             author="Test Author",
             publisher="Test Publisher",

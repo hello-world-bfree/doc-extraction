@@ -21,6 +21,7 @@ from src.extraction.core.output import (
 )
 from src.extraction.extractors.base import BaseExtractor
 from src.extraction.core.models import Chunk, Metadata, Provenance, Quality
+from tests.helpers import create_test_chunk, create_test_metadata, create_test_provenance, create_test_quality
 
 
 class SimpleExtractor(BaseExtractor):
@@ -32,22 +33,14 @@ class SimpleExtractor(BaseExtractor):
 
     def _setup_test_data(self):
         """Set up minimal test data."""
-        # Create provenance
-        self._provenance = Provenance(
+        # Create provenance using helper
+        self._provenance = create_test_provenance(
             doc_id="test123",
-            source_file="test.epub",
-            parser_version="1.0.0",
-            md_schema_version="1.0",
-            ingestion_ts="2024-01-01T00:00:00",
-            content_hash="abc123"
+            source_file="test.epub"
         )
 
-        # Create quality
-        self._quality = Quality(
-            signals={"garble_rate": 0.0, "mean_conf": 1.0, "line_len_std_norm": 0.0, "lang_prob": 1.0},
-            score=0.95,
-            route="A"
-        )
+        # Create quality using helper
+        self._quality = create_test_quality(score=0.95, route="A")
         self._doc_quality_score = 0.95
         self._doc_route = "A"
 
@@ -58,22 +51,22 @@ class SimpleExtractor(BaseExtractor):
     def parse(self):
         """Mock parse with test chunks."""
         self.chunks = [
-            Chunk(
-                chunk_id="chunk1",
+            create_test_chunk(
+                stable_id="chunk1",
                 paragraph_id=1,
                 text="First test paragraph.",
                 hierarchy={"level_1": "Chapter 1", "level_2": "", "level_3": "", "level_4": "", "level_5": "", "level_6": ""},
                 word_count=3
             ),
-            Chunk(
-                chunk_id="chunk2",
+            create_test_chunk(
+                stable_id="chunk2",
                 paragraph_id=2,
                 text="Second test paragraph.",
                 hierarchy={"level_1": "Chapter 1", "level_2": "Section A", "level_3": "", "level_4": "", "level_5": "", "level_6": ""},
                 word_count=3
             ),
-            Chunk(
-                chunk_id="chunk3",
+            create_test_chunk(
+                stable_id="chunk3",
                 paragraph_id=3,
                 text="Third test paragraph.",
                 hierarchy={"level_1": "Chapter 2", "level_2": "", "level_3": "", "level_4": "", "level_5": "", "level_6": ""},
@@ -83,7 +76,7 @@ class SimpleExtractor(BaseExtractor):
 
     def extract_metadata(self):
         """Mock metadata extraction."""
-        self.metadata = Metadata(
+        self.metadata = create_test_metadata(
             title="Test Document",
             author="Test Author",
             publisher="Test Publisher",
@@ -190,7 +183,7 @@ class TestWriteOutputs:
         assert len(lines) == 3  # 3 chunks
         for line in lines:
             chunk = json.loads(line)
-            assert "chunk_id" in chunk
+            assert "stable_id" in chunk
             assert "text" in chunk
 
     def test_write_outputs_no_ndjson_by_default(self, test_extractor, temp_dir):
@@ -317,17 +310,17 @@ class TestWriteHierarchyReport:
         """Test hierarchy report with nested structure."""
         extractor = SimpleExtractor("nested.epub")
 
-        # Create chunks with nested hierarchy
+        # Create chunks with nested hierarchy using helper
         extractor.chunks = [
-            Chunk(
-                chunk_id="c1",
+            create_test_chunk(
+                stable_id="c1",
                 paragraph_id=1,
                 text="Text 1",
                 hierarchy={"level_1": "Part I", "level_2": "Chapter 1", "level_3": "Section A", "level_4": "", "level_5": "", "level_6": ""},
                 word_count=50
             ),
-            Chunk(
-                chunk_id="c2",
+            create_test_chunk(
+                stable_id="c2",
                 paragraph_id=2,
                 text="Text 2",
                 hierarchy={"level_1": "Part I", "level_2": "Chapter 1", "level_3": "Section A", "level_4": "", "level_5": "", "level_6": ""},
