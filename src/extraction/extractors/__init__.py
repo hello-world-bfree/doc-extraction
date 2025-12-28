@@ -2,14 +2,24 @@
 # -*- coding: utf-8 -*-
 
 """
-Format-specific extractors for different document types.
+Document extractors for various formats.
+
+All extractors inherit from BaseExtractor and implement:
+- load(): Load the source document
+- parse(): Extract chunks with hierarchy
+- extract_metadata(): Extract document metadata
 """
 
 from .base import BaseExtractor
-from .epub import EpubExtractor, MetadataExtractor
+from .epub import EpubExtractor
+from .pdf import PdfExtractor
+from .html import HtmlExtractor
+from .markdown import MarkdownExtractor
 
 __all__ = [
     "BaseExtractor",
     "EpubExtractor",
-    "MetadataExtractor",
+    "PdfExtractor",
+    "HtmlExtractor",
+    "MarkdownExtractor",
 ]

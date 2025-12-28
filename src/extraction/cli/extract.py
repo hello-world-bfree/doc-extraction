@@ -19,6 +19,9 @@ from pathlib import Path
 from typing import List, Optional
 
 from ..extractors.epub import EpubExtractor
+from ..extractors.pdf import PdfExtractor
+from ..extractors.html import HtmlExtractor
+from ..extractors.markdown import MarkdownExtractor
 from ..core.output import write_outputs
 
 
@@ -97,15 +100,19 @@ def process_document(
     # Detect format
     fmt = detect_format(file_path)
 
-    # Select extractor
+    # Select extractor based on format
     if fmt == 'epub':
         extractor = EpubExtractor(file_path, config)
-        extractor.debug_dump = debug_dump
+        if hasattr(extractor, 'debug_dump'):
+            extractor.debug_dump = debug_dump
     elif fmt == 'pdf':
-        LOGGER.error("PDF support not yet implemented. Use epub_pdf_catholic_parser.py for now.")
-        return False
-    elif fmt in ['html', 'md', 'json']:
-        LOGGER.error(f"{fmt.upper()} support not yet implemented.")
+        extractor = PdfExtractor(file_path, config)
+    elif fmt == 'html':
+        extractor = HtmlExtractor(file_path, config)
+    elif fmt == 'md':
+        extractor = MarkdownExtractor(file_path, config)
+    elif fmt == 'json':
+        LOGGER.error("JSON format not yet implemented.")
         return False
     else:
         LOGGER.error(f"Unknown format: {file_path}")
@@ -174,7 +181,7 @@ def process_batch(
         Tuple of (success_count, total_count)
     """
     # Find all supported files
-    supported_exts = {'.epub'}  # Will expand as we add more extractors
+    supported_exts = {'.epub', '.pdf', '.html', '.htm', '.md', '.markdown'}
     files: List[str] = []
 
     pattern = "**/*" if recursive else "*"
