@@ -1,0 +1,21 @@
+Metadata-Version: 2.4
+Name: extraction
+Version: 2.0.0
+Summary: Multi-format document extraction with domain-specific analysis
+Requires-Python: >=3.13
+Description-Content-Type: text/markdown
+Requires-Dist: bs4>=0.0.2
+Requires-Dist: ebooklib>=0.19
+Requires-Dist: html5lib>=1.1
+Requires-Dist: tqdm>=4.67.1
+Provides-Extra: pdf
+Requires-Dist: pdfplumber>=0.11.0; extra == "pdf"
+Requires-Dist: PyPDF2>=3.0.0; extra == "pdf"
+Provides-Extra: ocr
+Requires-Dist: pypdfium2>=4.30.0; extra == "ocr"
+Requires-Dist: pytesseract>=0.3.10; extra == "ocr"
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.1.0; extra == "dev"
+
+# extraction

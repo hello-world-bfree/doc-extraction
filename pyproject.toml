@@ -1,0 +1,32 @@
+[project]
+name = "extraction"
+version = "2.0.0"
+description = "Multi-format document extraction with domain-specific analysis"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "bs4>=0.0.2",
+    "ebooklib>=0.19",
+    "html5lib>=1.1",
+    "tqdm>=4.67.1",
+]
+
+[project.optional-dependencies]
+pdf = [
+    "pdfplumber>=0.11.0",
+    "PyPDF2>=3.0.0",
+]
+ocr = [
+    "pypdfium2>=4.30.0",
+    "pytesseract>=0.3.10",
+]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
