@@ -20,6 +20,7 @@ from bs4 import BeautifulSoup
 from ebooklib import epub
 
 from .base import BaseExtractor
+from ..analyzers.catholic import CatholicAnalyzer
 from ..core.chunking import (
     heading_level,
     heading_path,
@@ -804,8 +805,36 @@ class EpubExtractor(BaseExtractor):
         if not self.chunks_dict:
             raise RuntimeError("No chunks available. Call parse() first.")
 
-        extractor = MetadataExtractor(self.href_to_toc_title)
-        metadata_dict = extractor.extract_from_epub(self.book, self.chunks_dict)
+        # Extract base metadata from EPUB
+        base_metadata = {
+            "title": clean_text(
+                self.book.get_metadata("DC", "title")[0][0]
+                if self.book.get_metadata("DC", "title")
+                else ""
+            ),
+            "author": clean_text(
+                self.book.get_metadata("DC", "creator")[0][0]
+                if self.book.get_metadata("DC", "creator")
+                else ""
+            ),
+            "language": clean_text(
+                self.book.get_metadata("DC", "language")[0][0]
+                if self.book.get_metadata("DC", "language")
+                else ""
+            ),
+            "publisher": clean_text(
+                self.book.get_metadata("DC", "publisher")[0][0]
+                if self.book.get_metadata("DC", "publisher")
+                else ""
+            ),
+            "source_identifiers": {"toc_map": self.href_to_toc_title or {}},
+            "md_schema_version": MD_SCHEMA_VERSION,
+        }
+
+        # Use CatholicAnalyzer to enrich with domain-specific metadata
+        analyzer = CatholicAnalyzer()
+        full_text = " ".join(ch["text"] for ch in self.chunks_dict)
+        metadata_dict = analyzer.enrich_metadata(base_metadata, full_text, self.chunks_dict)
 
         # Convert dict to Metadata object
         self.metadata = Metadata(
@@ -843,9 +872,35 @@ class EpubExtractor(BaseExtractor):
         if self.metadata is None:
             raise RuntimeError("No metadata available. Call extract_metadata() first.")
 
-        # Get the raw metadata dict from extractor (has footnotes_summary)
-        extractor = MetadataExtractor(self.href_to_toc_title)
-        raw_metadata = extractor.extract_from_epub(self.book, self.chunks_dict)
+        # Get the raw metadata dict using CatholicAnalyzer (has footnotes_summary)
+        base_metadata = {
+            "title": clean_text(
+                self.book.get_metadata("DC", "title")[0][0]
+                if self.book.get_metadata("DC", "title")
+                else ""
+            ),
+            "author": clean_text(
+                self.book.get_metadata("DC", "creator")[0][0]
+                if self.book.get_metadata("DC", "creator")
+                else ""
+            ),
+            "language": clean_text(
+                self.book.get_metadata("DC", "language")[0][0]
+                if self.book.get_metadata("DC", "language")
+                else ""
+            ),
+            "publisher": clean_text(
+                self.book.get_metadata("DC", "publisher")[0][0]
+                if self.book.get_metadata("DC", "publisher")
+                else ""
+            ),
+            "source_identifiers": {"toc_map": self.href_to_toc_title or {}},
+            "md_schema_version": MD_SCHEMA_VERSION,
+        }
+
+        analyzer = CatholicAnalyzer()
+        full_text = " ".join(ch["text"] for ch in self.chunks_dict)
+        raw_metadata = analyzer.enrich_metadata(base_metadata, full_text, self.chunks_dict)
 
         # Add provenance and quality
         raw_metadata["provenance"] = self.provenance.to_dict()

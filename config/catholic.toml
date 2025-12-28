@@ -1,0 +1,159 @@
+# Catholic Analyzer Configuration
+# Customize patterns for Catholic document analysis without changing code
+
+[document_types]
+# Document type patterns (name = [regex patterns])
+"Dogmatic Constitution" = [
+    "\\bdogmatic constitution\\b",
+    "constitutio dogmatica"
+]
+"Pastoral Constitution" = [
+    "\\bpastoral constitution\\b",
+    "constitutio pastoralis"
+]
+"Apostolic Constitution" = [
+    "apostolic constitution",
+    "constitutio apostolica"
+]
+"Encyclical" = [
+    "\\bencyclical\\b",
+    "litterae encyclicae"
+]
+"Apostolic Exhortation" = [
+    "apostolic exhortation",
+    "adhortatio"
+]
+"Apostolic Letter" = [
+    "apostolic letter",
+    "\\bepistula\\b"
+]
+"Motu Proprio" = ["\\bmotu proprio\\b"]
+"Decree" = ["\\bdecree\\b", "\\bdecretum\\b"]
+"Instruction" = ["\\binstruction\\b", "\\binstructio\\b"]
+"Declaration" = ["\\bdeclaration\\b", "\\bdeclaratio\\b"]
+"Constitution" = ["\\bconstitution\\b", "\\bconstitutio\\b"]
+
+[subjects]
+# Subject area patterns
+Liturgy = [
+    "\\blitur(?:gy|gica|gical)\\b",
+    "liturgy of the hours",
+    "officium divinum"
+]
+Mass = [
+    "\\bmass\\b",
+    "eucharist",
+    "holy sacrifice"
+]
+"Divine Office" = [
+    "divine office",
+    "breviary",
+    "breviarium"
+]
+Sacraments = [
+    "\\bsacrament",
+    "\\bbaptism\\b",
+    "\\bconfirmation\\b",
+    "\\borders\\b",
+    "\\bmarriage\\b",
+    "\\breconciliation\\b",
+    "\\banointing\\b"
+]
+Magisterium = [
+    "\\bmagisterium\\b",
+    "\\bapostolic see\\b",
+    "\\bholy see\\b"
+]
+Ecclesiology = [
+    "\\bchurch\\b",
+    "\\becclesia\\b",
+    "\\bepiscopal\\b",
+    "\\bbishop\\b",
+    "\\bdiocese\\b",
+    "\\bparish\\b"
+]
+Mariology = [
+    "\\bmary\\b",
+    "\\bimmaculate conception\\b",
+    "\\bassumption\\b",
+    "\\btheotokos\\b"
+]
+"Moral Theology" = [
+    "\\bmoral\\b",
+    "\\bethics\\b",
+    "\\bconscience\\b",
+    "\\bvirtue\\b"
+]
+Scripture = [
+    "\\bscripture\\b",
+    "\\bverbum\\b",
+    "\\bdivine revelation\\b"
+]
+"Canon Law" = [
+    "canon law",
+    "code of canon law",
+    "\\bcic\\b",
+    "\\bcceo\\b"
+]
+Prayer = [
+    "\\bprayer\\b",
+    "\\boratio\\b",
+    "\\bdevotion\\b",
+    "\\bro\\sary\\b"
+]
+"Council Documents" = [
+    "vatican\\s*(?:i|ii)",
+    "council of trent",
+    "lumen gentium",
+    "dei verbum"
+]
+
+[related_documents]
+# List of related Catholic documents to detect
+documents = [
+    "Sacrosanctum Concilium",
+    "Lumen Gentium",
+    "Dei Verbum",
+    "Gaudium et Spes",
+    "Dei Filius",
+    "Pastor Aeternus",
+    "Syllabus of Errors",
+    "Council of Trent",
+    "Trent",
+    "Quo Primum",
+    "Humanae Vitae",
+    "Laudato Si'",
+    "Fidei Depositum",
+    "Evangelii Nuntiandi",
+    "Missale Romanum",
+    "Liturgiam Authenticam",
+    "Mysterii Paschalis",
+    "Mediator Dei",
+    "Catechism of the Catholic Church",
+    "Roman Catechism",
+    "General Instruction of the Roman Missal"
+]
+
+[geographic_patterns]
+# Geographic focus patterns
+"Vatican City (Rome)" = [
+    "vatican",
+    "\\brome\\b",
+    "apostolic see",
+    "holy see"
+]
+"Universal Church" = [
+    "universal church",
+    "catholic church",
+    "whole church"
+]
+Diocese = [
+    "\\bdiocese\\b",
+    "\\bepiscopal\\b",
+    "\\bbishop\\b"
+]
+Parish = [
+    "\\bparish\\b",
+    "\\bpastor\\b",
+    "\\bfaithful\\b"
+]
