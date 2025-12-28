@@ -1,0 +1,41 @@
+EPUB HIERARCHICAL STRUCTURE REPORT
+======================================================================
+Source: Into the Deep.epub
+Generated: 2025-10-11 00:32:08
+
+DOCUMENT METADATA:
+--------------------
+Title: Into the Deep
+Author: DAN BURKE
+Subject: Mass, Sacraments, Ecclesiology... (7 total)
+Related Documents: Catechism of the Catholic Church
+Geographic Focus: Vatican City (Rome)
+Language: en
+Publisher: Beacon
+Pages: approximately 58
+Word Count: approximately 14,527
+Source Identifiers: {"toc_map": {"OPS/foreword.html": "Foreword", "OPS/intro_split_000.html": "Introduction: Why Pray?", "OPS/ch01_split_000.html": "One: Your Desire for God, God\u2019s Desire for You…
+Md Schema Version: 2025-09-08
+Footnotes Summary: {"unique_citations": [1, 2], "counts": {"1": 3, "2": 1}}
+Provenance: {"doc_id": "548aab7ecb53396a", "source_file": "Into the Deep.epub", "parser_version": "1.4.9-catholic-notables-batch", "md_schema_version": "2025-09-08", "ingestion_ts": "2025-10-1…
+Quality: {"signals": {"garble_rate": 0.0033908978613122775, "mean_conf": 0.9966091021386877, "line_len_std_norm": 0.0, "lang_prob": 0.5}, "score": 0.8976, "route": "A"}
+
+STRUCTURE TREE:
+---------------
+    └─ Foreword
+  [¶ 19-24, ~233 words]
+
+    └─ 1
+  [¶ 25-55, ~1028 words]
+
+    └─ 2
+  [¶ 127-177, ~3234 words]
+
+    └─ 3
+  [¶ 284-292, ~135 words]
+
+SUMMARY:
+----------
+Total unique hierarchy paths: 5
+Total paragraphs: 292
+Total words: 14,527
