@@ -22,6 +22,7 @@ from ..extractors.epub import EpubExtractor
 from ..extractors.pdf import PdfExtractor
 from ..extractors.html import HtmlExtractor
 from ..extractors.markdown import MarkdownExtractor
+from ..extractors.json import JsonExtractor
 from ..core.output import write_outputs
 
 
@@ -112,8 +113,7 @@ def process_document(
     elif fmt == 'md':
         extractor = MarkdownExtractor(file_path, config)
     elif fmt == 'json':
-        LOGGER.error("JSON format not yet implemented.")
-        return False
+        extractor = JsonExtractor(file_path, config)
     else:
         LOGGER.error(f"Unknown format: {file_path}")
         return False
@@ -181,7 +181,7 @@ def process_batch(
         Tuple of (success_count, total_count)
     """
     # Find all supported files
-    supported_exts = {'.epub', '.pdf', '.html', '.htm', '.md', '.markdown'}
+    supported_exts = {'.epub', '.pdf', '.html', '.htm', '.md', '.markdown', '.json'}
     files: List[str] = []
 
     pattern = "**/*" if recursive else "*"

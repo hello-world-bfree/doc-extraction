@@ -1,0 +1,36 @@
+{
+  "title": "Sample PDF Document",
+  "author": "Test Author",
+  "document_type": "",
+  "date_promulgated": "",
+  "subject": [],
+  "key_themes": [],
+  "related_documents": [],
+  "time_period": "",
+  "geographic_focus": "",
+  "language": "en",
+  "publisher": "ReportLab PDF Library - (opensource)",
+  "pages": "approximately 2",
+  "word_count": "approximately 288",
+  "source_identifiers": {},
+  "md_schema_version": "",
+  "footnote_index_count": 0,
+  "provenance": {
+    "doc_id": "7e9ecbbfbe55214f",
+    "source_file": "test_document.pdf",
+    "parser_version": "2.0.0-pdf",
+    "md_schema_version": "2025-09-08",
+    "ingestion_ts": "2025-12-28T10:02:03.202998",
+    "content_hash": "fdf97f8f0e751ff49e422dd94b7dae4cced64d45"
+  },
+  "quality": {
+    "signals": {
+      "garble_rate": 0.0,
+      "mean_conf": 1.0,
+      "line_len_std_norm": 0.0,
+      "lang_prob": 0.5
+    },
+    "score": 0.9,
+    "route": "A"
+  }
+}

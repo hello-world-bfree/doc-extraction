@@ -2,6 +2,23 @@
 # -*- coding: utf-8 -*-
 
 """
+⚠️ DEPRECATED - This legacy parser is deprecated in favor of the new extraction library.
+
+Please use the unified extraction CLI instead:
+    extract document.epub [OPTIONS]
+
+Or the Python API:
+    from src.extraction.extractors import EpubExtractor
+    extractor = EpubExtractor("document.epub")
+    extractor.load()
+    extractor.parse()
+    metadata = extractor.extract_metadata()
+
+For more information, see README.md and USER_GUIDE.md
+
+This file is maintained for backward compatibility only.
+===============================================================================
+
 EPUB → hierarchical chunks with quality routing, provenance, NDJSON.
 Tailored for Catholic literature / magisterial texts.
 
@@ -1103,6 +1120,10 @@ def _hier_depth(h: Dict[str, str]) -> int:
 
 def main():
     import argparse
+    from DEPRECATION_NOTICE import show_deprecation_warning
+
+    # Show deprecation warning
+    show_deprecation_warning("book_parser_no_footnotes.py")
 
     ap = argparse.ArgumentParser(
         description="Parse an EPUB or a folder of EPUBs into hierarchical chunks with quality routing, provenance, and Catholic cross-refs."

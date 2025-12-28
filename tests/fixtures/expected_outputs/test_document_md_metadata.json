@@ -1,0 +1,36 @@
+{
+  "title": "Sample Markdown Document",
+  "author": "Test Author",
+  "document_type": "",
+  "date_promulgated": "",
+  "subject": [],
+  "key_themes": [],
+  "related_documents": [],
+  "time_period": "",
+  "geographic_focus": "",
+  "language": "en",
+  "publisher": "",
+  "pages": "",
+  "word_count": "approximately 153",
+  "source_identifiers": {},
+  "md_schema_version": "",
+  "footnote_index_count": 0,
+  "provenance": {
+    "doc_id": "00b62db9ca8c97eb",
+    "source_file": "test_document.md",
+    "parser_version": "2.0.0-markdown",
+    "md_schema_version": "2025-09-08",
+    "ingestion_ts": "2025-12-28T10:03:02.385363",
+    "content_hash": "82a11d259d9587060fba18f9bbec4a6683aea9e3"
+  },
+  "quality": {
+    "signals": {
+      "garble_rate": 0.0,
+      "mean_conf": 0.8,
+      "line_len_std_norm": 0.0,
+      "lang_prob": 0.5
+    },
+    "score": 0.84,
+    "route": "A"
+  }
+}

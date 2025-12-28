@@ -1,0 +1,54 @@
+DOCUMENT HIERARCHICAL STRUCTURE REPORT
+======================================================================
+Source: test_document.html
+Generated: 2025-12-28 10:02:28
+
+DOCUMENT METADATA:
+--------------------
+Title: Sample HTML Document
+Author: Test Author
+Language: en
+Word Count: approximately 224
+
+STRUCTURE TREE:
+---------------
+Introduction to HTMLTesting
+  [¶ 1-1, ~22 words]
+
+Introduction to HTMLTesting
+  └─ Basic Structure
+    [¶ 2-2, ~26 words]
+
+Introduction to HTMLTesting
+  └─ Basic Structure
+    └─ Subsection Example
+      [¶ 3-3, ~21 words]
+
+Introduction to HTMLTesting
+  └─ Lists and Elements
+    [¶ 4-9, ~59 words]
+
+Introduction to HTMLTesting
+  └─ Divisions and Paragraphs
+    [¶ 10-11, ~32 words]
+
+Introduction to HTMLTesting
+  └─ Divisions and Paragraphs
+    └─ References Section
+      [¶ 12-12, ~17 words]
+
+Introduction to HTMLTesting
+  └─ Divisions and Paragraphs
+    └─ References Section
+      └─ Biblical Citations
+        [¶ 13-13, ~20 words]
+
+Introduction to HTMLTesting
+  └─ Conclusion
+    [¶ 14-14, ~27 words]
+
+SUMMARY:
+----------
+Total unique hierarchy paths: 8
+Total paragraphs: 14
+Total words: 224

@@ -1,0 +1,21 @@
+DOCUMENT HIERARCHICAL STRUCTURE REPORT
+======================================================================
+Source: test_document.pdf
+Generated: 2025-12-28 10:02:03
+
+DOCUMENT METADATA:
+--------------------
+Title: Sample PDF Document
+Author: Test Author
+Language: en
+Publisher: ReportLab PDF Library - (opensource)
+Pages: approximately 2
+Word Count: approximately 288
+
+STRUCTURE TREE:
+---------------
+SUMMARY:
+----------
+Total unique hierarchy paths: 1
+Total paragraphs: 2
+Total words: 288

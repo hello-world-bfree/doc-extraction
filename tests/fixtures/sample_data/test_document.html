@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Test Author">
+    <meta name="description" content="A sample HTML document for testing the HTML extractor">
+    <meta name="keywords" content="test, sample, html, extraction">
+    <title>Sample HTML Document</title>
+</head>
+<body>
+    <main>
+        <article>
+            <h1>Introduction to HTML Testing</h1>
+
+            <p>This is a sample document for testing the HTML extractor. It contains various elements that should be properly extracted with hierarchy preservation.</p>
+
+            <h2>Basic Structure</h2>
+
+            <p>This paragraph demonstrates basic text extraction from HTML. It should be captured as a single chunk with proper hierarchy tracking showing the h1 and h2 headings.</p>
+
+            <h3>Subsection Example</h3>
+
+            <p>Here we have a level 3 heading with some content beneath it. The hierarchy should show all three levels properly nested.</p>
+
+            <h2>Lists and Elements</h2>
+
+            <p>HTML supports various element types that contain text:</p>
+
+            <ul>
+                <li>First list item with some text content</li>
+                <li>Second list item demonstrating list extraction</li>
+                <li>Third list item with additional details</li>
+            </ul>
+
+            <blockquote>
+                <p>This is a blockquote element that should be extracted as a separate chunk with appropriate metadata.</p>
+            </blockquote>
+
+            <h2>Divisions and Paragraphs</h2>
+
+            <div>
+                <p>Content inside div elements should also be extracted properly. This paragraph is nested within a div.</p>
+            </div>
+
+            <h3>References Section</h3>
+
+            <p>This section contains sample references. See Chapter 5 for more details. Compare with Section 2.3 mentioned above.</p>
+
+            <h4>Biblical Citations</h4>
+
+            <p>This text mentions Romans 8:28 and Psalm 23:1-6 as sample scripture references that should be detected by the extraction system.</p>
+
+            <h2>Conclusion</h2>
+
+            <p>This final section wraps up the test document. It should be extracted with proper metadata including the title from the title tag and author from meta tags.</p>
+        </article>
+    </main>
+</body>
+</html>

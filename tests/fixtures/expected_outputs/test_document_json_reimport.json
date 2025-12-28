@@ -1,0 +1,317 @@
+{
+  "metadata": {
+    "title": "Sample Markdown Document",
+    "author": "Test Author",
+    "document_type": "",
+    "date_promulgated": "",
+    "subject": [],
+    "key_themes": [],
+    "related_documents": [],
+    "time_period": "",
+    "geographic_focus": "",
+    "language": "en",
+    "publisher": "",
+    "pages": "",
+    "word_count": "approximately 153",
+    "source_identifiers": {},
+    "md_schema_version": "",
+    "footnote_index_count": 0,
+    "provenance": {
+      "doc_id": "16cce66e6ed52e3b",
+      "source_file": "test_document_md.json",
+      "parser_version": "2.0.0-json-import",
+      "md_schema_version": "2025-09-08",
+      "ingestion_ts": "2025-12-28T10:05:12.935614",
+      "content_hash": "be7114ca040f2f114736603b53ea402c7ba6bf31"
+    },
+    "quality": {
+      "signals": {
+        "garble_rate": 0.0,
+        "mean_conf": 0.8,
+        "line_len_std_norm": 0.0,
+        "lang_prob": 0.5
+      },
+      "score": 0.84,
+      "route": "A"
+    }
+  },
+  "chunks": [
+    {
+      "stable_id": "8df614276e547f28",
+      "paragraph_id": 1,
+      "text": "This is a sample document for testing the Markdown extractor. It contains various elements that should be properly extracted.",
+      "hierarchy": {
+        "level_1": "Introduction to Markdown Testing",
+        "level_2": "",
+        "level_3": "",
+        "level_4": "",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 1,
+      "source_tag": "p",
+      "text_length": 125,
+      "word_count": 19,
+      "cross_references": [],
+      "scripture_references": [],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to Markdown Testing",
+      "hierarchy_depth": 1,
+      "doc_stable_id": "00b62db9ca8c97eb",
+      "sentence_count": 2,
+      "sentences": [
+        "This is a sample document for testing the Markdown extractor.",
+        "It contains various elements that should be properly extracted."
+      ],
+      "normalized_text": "this is a sample document for testing the markdown extractor. it contains various elements that should be properly extracted."
+    },
+    {
+      "stable_id": "abc6e3c866a3c951",
+      "paragraph_id": 2,
+      "text": "This paragraph demonstrates basic text extraction. It should be captured as a single chunk with proper hierarchy tracking.",
+      "hierarchy": {
+        "level_1": "Introduction to Markdown Testing",
+        "level_2": "Basic Formatting",
+        "level_3": "",
+        "level_4": "",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 2,
+      "source_tag": "p",
+      "text_length": 122,
+      "word_count": 18,
+      "cross_references": [],
+      "scripture_references": [],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to Markdown Testing / Basic Formatting",
+      "hierarchy_depth": 2,
+      "doc_stable_id": "00b62db9ca8c97eb",
+      "sentence_count": 2,
+      "sentences": [
+        "This paragraph demonstrates basic text extraction.",
+        "It should be captured as a single chunk with proper hierarchy tracking."
+      ],
+      "normalized_text": "this paragraph demonstrates basic text extraction. it should be captured as a single chunk with proper hierarchy tracking."
+    },
+    {
+      "stable_id": "cd17d84957854bf6",
+      "paragraph_id": 3,
+      "text": "Here we have a level 3 heading with some content beneath it. The hierarchy should show: - Level 1: Introduction to Markdown Testing - Level 2: Basic Formatting - Level 3: Subsection Example",
+      "hierarchy": {
+        "level_1": "Introduction to Markdown Testing",
+        "level_2": "Basic Formatting",
+        "level_3": "Subsection Example",
+        "level_4": "",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 3,
+      "source_tag": "p",
+      "text_length": 189,
+      "word_count": 33,
+      "cross_references": [],
+      "scripture_references": [],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to Markdown Testing / Basic Formatting / Subsection Example",
+      "hierarchy_depth": 3,
+      "doc_stable_id": "00b62db9ca8c97eb",
+      "sentence_count": 2,
+      "sentences": [
+        "Here we have a level 3 heading with some content beneath it.",
+        "The hierarchy should show: - Level 1: Introduction to Markdown Testing - Level 2: Basic Formatting - Level 3: Subsection Example"
+      ],
+      "normalized_text": "here we have a level 3 heading with some content beneath it. the hierarchy should show: - level 1: introduction to markdown testing - level 2: basic formatting - level 3: subsection example"
+    },
+    {
+      "stable_id": "249855a539dfb2a1",
+      "paragraph_id": 4,
+      "text": "Markdown supports various list types:",
+      "hierarchy": {
+        "level_1": "Introduction to Markdown Testing",
+        "level_2": "Lists and Structure",
+        "level_3": "",
+        "level_4": "",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 4,
+      "source_tag": "p",
+      "text_length": 37,
+      "word_count": 5,
+      "cross_references": [],
+      "scripture_references": [],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to Markdown Testing / Lists and Structure",
+      "hierarchy_depth": 2,
+      "doc_stable_id": "00b62db9ca8c97eb",
+      "sentence_count": 1,
+      "sentences": [
+        "Markdown supports various list types:"
+      ],
+      "normalized_text": "markdown supports various list types:"
+    },
+    {
+      "stable_id": "2fb4933d80353374",
+      "paragraph_id": 5,
+      "text": "- First bullet point - Second bullet point with some additional text - Third bullet point",
+      "hierarchy": {
+        "level_1": "Introduction to Markdown Testing",
+        "level_2": "Lists and Structure",
+        "level_3": "",
+        "level_4": "",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 5,
+      "source_tag": "p",
+      "text_length": 89,
+      "word_count": 16,
+      "cross_references": [],
+      "scripture_references": [],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to Markdown Testing / Lists and Structure",
+      "hierarchy_depth": 2,
+      "doc_stable_id": "00b62db9ca8c97eb",
+      "sentence_count": 1,
+      "sentences": [
+        "- First bullet point - Second bullet point with some additional text - Third bullet point"
+      ],
+      "normalized_text": "- first bullet point - second bullet point with some additional text - third bullet point"
+    },
+    {
+      "stable_id": "3f1a9e773b5d4c91",
+      "paragraph_id": 6,
+      "text": "Code blocks should be handled appropriately:",
+      "hierarchy": {
+        "level_1": "Introduction to Markdown Testing",
+        "level_2": "Lists and Structure",
+        "level_3": "Code Blocks",
+        "level_4": "",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 6,
+      "source_tag": "p",
+      "text_length": 44,
+      "word_count": 6,
+      "cross_references": [],
+      "scripture_references": [],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to Markdown Testing / Lists and Structure / Code Blocks",
+      "hierarchy_depth": 3,
+      "doc_stable_id": "00b62db9ca8c97eb",
+      "sentence_count": 1,
+      "sentences": [
+        "Code blocks should be handled appropriately:"
+      ],
+      "normalized_text": "code blocks should be handled appropriately:"
+    },
+    {
+      "stable_id": "fef0636889f53448",
+      "paragraph_id": 7,
+      "text": "This section contains some sample references. See Chapter 3 for more details. Compare with Section 2.1 above.",
+      "hierarchy": {
+        "level_1": "Introduction to Markdown Testing",
+        "level_2": "References and Cross-References",
+        "level_3": "",
+        "level_4": "",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 7,
+      "source_tag": "p",
+      "text_length": 109,
+      "word_count": 17,
+      "cross_references": [
+        "See Chapter 3"
+      ],
+      "scripture_references": [],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to Markdown Testing / References and Cross-References",
+      "hierarchy_depth": 2,
+      "doc_stable_id": "00b62db9ca8c97eb",
+      "sentence_count": 3,
+      "sentences": [
+        "This section contains some sample references.",
+        "See Chapter 3 for more details.",
+        "Compare with Section 2.1 above."
+      ],
+      "normalized_text": "this section contains some sample references. see chapter 3 for more details. compare with section 2.1 above."
+    },
+    {
+      "stable_id": "80be96a1548b9da2",
+      "paragraph_id": 8,
+      "text": "This text mentions John 3:16 and Matthew 5:1-12 as sample scripture references that should be detected.",
+      "hierarchy": {
+        "level_1": "Introduction to Markdown Testing",
+        "level_2": "References and Cross-References",
+        "level_3": "Biblical References",
+        "level_4": "",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 8,
+      "source_tag": "p",
+      "text_length": 103,
+      "word_count": 16,
+      "cross_references": [],
+      "scripture_references": [
+        "John 3:16",
+        "Matthew 5:1-12"
+      ],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to Markdown Testing / References and Cross-References / Biblical References",
+      "hierarchy_depth": 3,
+      "doc_stable_id": "00b62db9ca8c97eb",
+      "sentence_count": 1,
+      "sentences": [
+        "This text mentions John 3:16 and Matthew 5:1-12 as sample scripture references that should be detected."
+      ],
+      "normalized_text": "this text mentions john 3:16 and matthew 5:1-12 as sample scripture references that should be detected."
+    },
+    {
+      "stable_id": "0a847827cf504d05",
+      "paragraph_id": 9,
+      "text": "This final section wraps up the test document. It should be extracted with proper metadata including the title and author from the frontmatter.",
+      "hierarchy": {
+        "level_1": "Introduction to Markdown Testing",
+        "level_2": "Conclusion",
+        "level_3": "",
+        "level_4": "",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 9,
+      "source_tag": "p",
+      "text_length": 143,
+      "word_count": 23,
+      "cross_references": [],
+      "scripture_references": [],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to Markdown Testing / Conclusion",
+      "hierarchy_depth": 2,
+      "doc_stable_id": "00b62db9ca8c97eb",
+      "sentence_count": 2,
+      "sentences": [
+        "This final section wraps up the test document.",
+        "It should be extracted with proper metadata including the title and author from the frontmatter."
+      ],
+      "normalized_text": "this final section wraps up the test document. it should be extracted with proper metadata including the title and author from the frontmatter."
+    }
+  ],
+  "extraction_info": {
+    "total_chunks": 9,
+    "quality_route": "A",
+    "quality_score": 0.84
+  }
+}

@@ -15,6 +15,7 @@ from .epub import EpubExtractor
 from .pdf import PdfExtractor
 from .html import HtmlExtractor
 from .markdown import MarkdownExtractor
+from .json import JsonExtractor
 
 __all__ = [
     "BaseExtractor",
@@ -22,4 +23,5 @@ __all__ = [
     "PdfExtractor",
     "HtmlExtractor",
     "MarkdownExtractor",
+    "JsonExtractor",
 ]

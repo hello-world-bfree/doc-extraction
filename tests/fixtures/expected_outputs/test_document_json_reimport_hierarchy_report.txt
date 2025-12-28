@@ -1,0 +1,53 @@
+DOCUMENT HIERARCHICAL STRUCTURE REPORT
+======================================================================
+Source: test_document_md.json
+Generated: 2025-12-28 10:05:12
+
+DOCUMENT METADATA:
+--------------------
+Title: Sample Markdown Document
+Author: Test Author
+Language: en
+Word Count: approximately 153
+
+STRUCTURE TREE:
+---------------
+Introduction to Markdown Testing
+  [¶ 1-1, ~19 words]
+
+Introduction to Markdown Testing
+  └─ Basic Formatting
+    [¶ 2-2, ~18 words]
+
+Introduction to Markdown Testing
+  └─ Basic Formatting
+    └─ Subsection Example
+      [¶ 3-3, ~33 words]
+
+Introduction to Markdown Testing
+  └─ Lists and Structure
+    [¶ 4-5, ~21 words]
+
+Introduction to Markdown Testing
+  └─ Lists and Structure
+    └─ Code Blocks
+      [¶ 6-6, ~6 words]
+
+Introduction to Markdown Testing
+  └─ References and Cross-References
+    [¶ 7-7, ~17 words]
+
+Introduction to Markdown Testing
+  └─ References and Cross-References
+    └─ Biblical References
+      [¶ 8-8, ~16 words]
+
+Introduction to Markdown Testing
+  └─ Conclusion
+    [¶ 9-9, ~23 words]
+
+SUMMARY:
+----------
+Total unique hierarchy paths: 8
+Total paragraphs: 9
+Total words: 153

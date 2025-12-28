@@ -1,0 +1,464 @@
+{
+  "metadata": {
+    "title": "Sample HTML Document",
+    "author": "Test Author",
+    "document_type": "",
+    "date_promulgated": "",
+    "subject": [],
+    "key_themes": [],
+    "related_documents": [],
+    "time_period": "",
+    "geographic_focus": "",
+    "language": "en",
+    "publisher": "",
+    "pages": "",
+    "word_count": "approximately 224",
+    "source_identifiers": {},
+    "md_schema_version": "",
+    "footnote_index_count": 0,
+    "provenance": {
+      "doc_id": "fca62f1562c9dcb6",
+      "source_file": "test_document.html",
+      "parser_version": "2.0.0-html",
+      "md_schema_version": "2025-09-08",
+      "ingestion_ts": "2025-12-28T10:02:28.221100",
+      "content_hash": "0e39fa220ee0d11fbfed3e995738cb1ff61f7232"
+    },
+    "quality": {
+      "signals": {
+        "garble_rate": 0.0,
+        "mean_conf": 0.8,
+        "line_len_std_norm": 0.0,
+        "lang_prob": 0.5
+      },
+      "score": 0.84,
+      "route": "A"
+    }
+  },
+  "chunks": [
+    {
+      "stable_id": "7b0d6789e8c7a26e",
+      "paragraph_id": 1,
+      "text": "This is a sample document for testing the HTML extractor. It contains various elements that should be properly extracted with hierarchy preservation.",
+      "hierarchy": {
+        "level_1": "Introduction to HTMLTesting",
+        "level_2": "",
+        "level_3": "",
+        "level_4": "",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 1,
+      "source_tag": "p",
+      "text_length": 149,
+      "word_count": 22,
+      "cross_references": [],
+      "scripture_references": [],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to HTMLTesting",
+      "hierarchy_depth": 1,
+      "doc_stable_id": "fca62f1562c9dcb6",
+      "sentence_count": 2,
+      "sentences": [
+        "This is a sample document for testing the HTML extractor.",
+        "It contains various elements that should be properly extracted with hierarchy preservation."
+      ],
+      "normalized_text": "this is a sample document for testing the html extractor. it contains various elements that should be properly extracted with hierarchy preservation."
+    },
+    {
+      "stable_id": "d8224cd8fb661d71",
+      "paragraph_id": 2,
+      "text": "This paragraph demonstrates basic text extraction from HTML. It should be captured as a single chunk with proper hierarchy tracking showing the h1 and h2 headings.",
+      "hierarchy": {
+        "level_1": "Introduction to HTMLTesting",
+        "level_2": "Basic Structure",
+        "level_3": "",
+        "level_4": "",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 2,
+      "source_tag": "p",
+      "text_length": 163,
+      "word_count": 26,
+      "cross_references": [],
+      "scripture_references": [],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to HTMLTesting / Basic Structure",
+      "hierarchy_depth": 2,
+      "doc_stable_id": "fca62f1562c9dcb6",
+      "sentence_count": 2,
+      "sentences": [
+        "This paragraph demonstrates basic text extraction from HTML.",
+        "It should be captured as a single chunk with proper hierarchy tracking showing the h1 and h2 headings."
+      ],
+      "normalized_text": "this paragraph demonstrates basic text extraction from html. it should be captured as a single chunk with proper hierarchy tracking showing the h1 and h2 headings."
+    },
+    {
+      "stable_id": "3256b737d8da4a59",
+      "paragraph_id": 3,
+      "text": "Here we have a level 3 heading with some content beneath it. The hierarchy should show all three levels properly nested.",
+      "hierarchy": {
+        "level_1": "Introduction to HTMLTesting",
+        "level_2": "Basic Structure",
+        "level_3": "Subsection Example",
+        "level_4": "",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 3,
+      "source_tag": "p",
+      "text_length": 120,
+      "word_count": 21,
+      "cross_references": [],
+      "scripture_references": [],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to HTMLTesting / Basic Structure / Subsection Example",
+      "hierarchy_depth": 3,
+      "doc_stable_id": "fca62f1562c9dcb6",
+      "sentence_count": 2,
+      "sentences": [
+        "Here we have a level 3 heading with some content beneath it.",
+        "The hierarchy should show all three levels properly nested."
+      ],
+      "normalized_text": "here we have a level 3 heading with some content beneath it. the hierarchy should show all three levels properly nested."
+    },
+    {
+      "stable_id": "42428bf991f9f613",
+      "paragraph_id": 4,
+      "text": "HTML supports various element types that contain text:",
+      "hierarchy": {
+        "level_1": "Introduction to HTMLTesting",
+        "level_2": "Lists and Elements",
+        "level_3": "",
+        "level_4": "",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 4,
+      "source_tag": "p",
+      "text_length": 54,
+      "word_count": 8,
+      "cross_references": [],
+      "scripture_references": [],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to HTMLTesting / Lists and Elements",
+      "hierarchy_depth": 2,
+      "doc_stable_id": "fca62f1562c9dcb6",
+      "sentence_count": 1,
+      "sentences": [
+        "HTML supports various element types that contain text:"
+      ],
+      "normalized_text": "html supports various element types that contain text:"
+    },
+    {
+      "stable_id": "1442094016a5954b",
+      "paragraph_id": 5,
+      "text": "First list item with some text content",
+      "hierarchy": {
+        "level_1": "Introduction to HTMLTesting",
+        "level_2": "Lists and Elements",
+        "level_3": "",
+        "level_4": "",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 5,
+      "source_tag": "li",
+      "text_length": 38,
+      "word_count": 7,
+      "cross_references": [],
+      "scripture_references": [],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to HTMLTesting / Lists and Elements",
+      "hierarchy_depth": 2,
+      "doc_stable_id": "fca62f1562c9dcb6",
+      "sentence_count": 1,
+      "sentences": [
+        "First list item with some text content"
+      ],
+      "normalized_text": "first list item with some text content"
+    },
+    {
+      "stable_id": "465b80f250e32dfb",
+      "paragraph_id": 6,
+      "text": "Second list item demonstrating list extraction",
+      "hierarchy": {
+        "level_1": "Introduction to HTMLTesting",
+        "level_2": "Lists and Elements",
+        "level_3": "",
+        "level_4": "",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 6,
+      "source_tag": "li",
+      "text_length": 46,
+      "word_count": 6,
+      "cross_references": [],
+      "scripture_references": [],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to HTMLTesting / Lists and Elements",
+      "hierarchy_depth": 2,
+      "doc_stable_id": "fca62f1562c9dcb6",
+      "sentence_count": 1,
+      "sentences": [
+        "Second list item demonstrating list extraction"
+      ],
+      "normalized_text": "second list item demonstrating list extraction"
+    },
+    {
+      "stable_id": "916e544909bf7a51",
+      "paragraph_id": 7,
+      "text": "Third list item with additional details",
+      "hierarchy": {
+        "level_1": "Introduction to HTMLTesting",
+        "level_2": "Lists and Elements",
+        "level_3": "",
+        "level_4": "",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 7,
+      "source_tag": "li",
+      "text_length": 39,
+      "word_count": 6,
+      "cross_references": [],
+      "scripture_references": [],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to HTMLTesting / Lists and Elements",
+      "hierarchy_depth": 2,
+      "doc_stable_id": "fca62f1562c9dcb6",
+      "sentence_count": 1,
+      "sentences": [
+        "Third list item with additional details"
+      ],
+      "normalized_text": "third list item with additional details"
+    },
+    {
+      "stable_id": "e640461c237ba1e6",
+      "paragraph_id": 8,
+      "text": "This is a blockquote element that should be extracted as a separate chunk with appropriate metadata.",
+      "hierarchy": {
+        "level_1": "Introduction to HTMLTesting",
+        "level_2": "Lists and Elements",
+        "level_3": "",
+        "level_4": "",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 8,
+      "source_tag": "blockquote",
+      "text_length": 100,
+      "word_count": 16,
+      "cross_references": [],
+      "scripture_references": [],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to HTMLTesting / Lists and Elements",
+      "hierarchy_depth": 2,
+      "doc_stable_id": "fca62f1562c9dcb6",
+      "sentence_count": 1,
+      "sentences": [
+        "This is a blockquote element that should be extracted as a separate chunk with appropriate metadata."
+      ],
+      "normalized_text": "this is a blockquote element that should be extracted as a separate chunk with appropriate metadata."
+    },
+    {
+      "stable_id": "f6a1b592afc1cba5",
+      "paragraph_id": 9,
+      "text": "This is a blockquote element that should be extracted as a separate chunk with appropriate metadata.",
+      "hierarchy": {
+        "level_1": "Introduction to HTMLTesting",
+        "level_2": "Lists and Elements",
+        "level_3": "",
+        "level_4": "",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 9,
+      "source_tag": "p",
+      "text_length": 100,
+      "word_count": 16,
+      "cross_references": [],
+      "scripture_references": [],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to HTMLTesting / Lists and Elements",
+      "hierarchy_depth": 2,
+      "doc_stable_id": "fca62f1562c9dcb6",
+      "sentence_count": 1,
+      "sentences": [
+        "This is a blockquote element that should be extracted as a separate chunk with appropriate metadata."
+      ],
+      "normalized_text": "this is a blockquote element that should be extracted as a separate chunk with appropriate metadata."
+    },
+    {
+      "stable_id": "27356083cd02d11e",
+      "paragraph_id": 10,
+      "text": "Content inside div elements should also be extracted properly. This paragraph is nested within a div.",
+      "hierarchy": {
+        "level_1": "Introduction to HTMLTesting",
+        "level_2": "Divisions and Paragraphs",
+        "level_3": "",
+        "level_4": "",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 10,
+      "source_tag": "div",
+      "text_length": 101,
+      "word_count": 16,
+      "cross_references": [],
+      "scripture_references": [],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to HTMLTesting / Divisions and Paragraphs",
+      "hierarchy_depth": 2,
+      "doc_stable_id": "fca62f1562c9dcb6",
+      "sentence_count": 2,
+      "sentences": [
+        "Content inside div elements should also be extracted properly.",
+        "This paragraph is nested within a div."
+      ],
+      "normalized_text": "content inside div elements should also be extracted properly. this paragraph is nested within a div."
+    },
+    {
+      "stable_id": "5aca2209ff9ca3a0",
+      "paragraph_id": 11,
+      "text": "Content inside div elements should also be extracted properly. This paragraph is nested within a div.",
+      "hierarchy": {
+        "level_1": "Introduction to HTMLTesting",
+        "level_2": "Divisions and Paragraphs",
+        "level_3": "",
+        "level_4": "",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 11,
+      "source_tag": "p",
+      "text_length": 101,
+      "word_count": 16,
+      "cross_references": [],
+      "scripture_references": [],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to HTMLTesting / Divisions and Paragraphs",
+      "hierarchy_depth": 2,
+      "doc_stable_id": "fca62f1562c9dcb6",
+      "sentence_count": 2,
+      "sentences": [
+        "Content inside div elements should also be extracted properly.",
+        "This paragraph is nested within a div."
+      ],
+      "normalized_text": "content inside div elements should also be extracted properly. this paragraph is nested within a div."
+    },
+    {
+      "stable_id": "312f6d1e39f6799f",
+      "paragraph_id": 12,
+      "text": "This section contains sample references. See Chapter 5 for more details. Compare with Section 2.3 mentioned above.",
+      "hierarchy": {
+        "level_1": "Introduction to HTMLTesting",
+        "level_2": "Divisions and Paragraphs",
+        "level_3": "References Section",
+        "level_4": "",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 12,
+      "source_tag": "p",
+      "text_length": 114,
+      "word_count": 17,
+      "cross_references": [
+        "See Chapter 5"
+      ],
+      "scripture_references": [],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to HTMLTesting / Divisions and Paragraphs / References Section",
+      "hierarchy_depth": 3,
+      "doc_stable_id": "fca62f1562c9dcb6",
+      "sentence_count": 3,
+      "sentences": [
+        "This section contains sample references.",
+        "See Chapter 5 for more details.",
+        "Compare with Section 2.3 mentioned above."
+      ],
+      "normalized_text": "this section contains sample references. see chapter 5 for more details. compare with section 2.3 mentioned above."
+    },
+    {
+      "stable_id": "b62df181b46839a8",
+      "paragraph_id": 13,
+      "text": "This text mentions Romans 8:28 and Psalm 23:1-6 as sample scripture references that should be detected by the extraction system.",
+      "hierarchy": {
+        "level_1": "Introduction to HTMLTesting",
+        "level_2": "Divisions and Paragraphs",
+        "level_3": "References Section",
+        "level_4": "Biblical Citations",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 13,
+      "source_tag": "p",
+      "text_length": 128,
+      "word_count": 20,
+      "cross_references": [],
+      "scripture_references": [
+        "Psalm 23:1-6",
+        "Romans 8:28"
+      ],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to HTMLTesting / Divisions and Paragraphs / References Section / Biblical Citations",
+      "hierarchy_depth": 4,
+      "doc_stable_id": "fca62f1562c9dcb6",
+      "sentence_count": 1,
+      "sentences": [
+        "This text mentions Romans 8:28 and Psalm 23:1-6 as sample scripture references that should be detected by the extraction system."
+      ],
+      "normalized_text": "this text mentions romans 8:28 and psalm 23:1-6 as sample scripture references that should be detected by the extraction system."
+    },
+    {
+      "stable_id": "6c0a0b95a3d262bb",
+      "paragraph_id": 14,
+      "text": "This final section wraps up the test document. It should be extracted with proper metadata including the title from the title tag and author from meta tags.",
+      "hierarchy": {
+        "level_1": "Introduction to HTMLTesting",
+        "level_2": "Conclusion",
+        "level_3": "",
+        "level_4": "",
+        "level_5": "",
+        "level_6": ""
+      },
+      "chapter_href": "",
+      "source_order": 14,
+      "source_tag": "p",
+      "text_length": 156,
+      "word_count": 27,
+      "cross_references": [],
+      "scripture_references": [],
+      "dates_mentioned": [],
+      "heading_path": "Introduction to HTMLTesting / Conclusion",
+      "hierarchy_depth": 2,
+      "doc_stable_id": "fca62f1562c9dcb6",
+      "sentence_count": 2,
+      "sentences": [
+        "This final section wraps up the test document.",
+        "It should be extracted with proper metadata including the title from the title tag and author from meta tags."
+      ],
+      "normalized_text": "this final section wraps up the test document. it should be extracted with proper metadata including the title from the title tag and author from meta tags."
+    }
+  ],
+  "extraction_info": {
+    "total_chunks": 14,
+    "quality_route": "A",
+    "quality_score": 0.84
+  }
+}
