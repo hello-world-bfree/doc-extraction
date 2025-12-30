@@ -24,6 +24,54 @@ The new extraction library offers:
 ✅ **Better documentation**: README.md and USER_GUIDE.md
 ✅ **Active maintenance**: New features and bug fixes
 
+## Breaking Changes in Version 2.1.0
+
+### Text Spacing Fix (December 2025)
+
+**What Changed**: Fixed a bug in the `normalize_spaced_caps()` function where heading text extraction was incorrectly concatenating words without spaces.
+
+**Examples of Fixed Output**:
+- **Before**: `"Introduction to HTMLTesting"` (missing space before "Testing")
+- **After**: `"Introduction to HTML Testing"` (correct spacing)
+- **Before**: `"About XMLDocuments"` (missing space before "Documents")
+- **After**: `"About XML Documents"` (correct spacing)
+
+**Impact**: This affects HTML and potentially PDF extraction output:
+- Heading hierarchy text now has proper spacing
+- JSON output format unchanged, but text values differ
+- Quality scores and chunk counts unchanged
+- Only affects text content in hierarchy fields
+
+**Who is Affected**: You are affected if:
+- You parse or compare hierarchy text values (e.g., `chunk.hierarchy["level_1"]`)
+- You have assertions or logic that depends on the buggy spacing
+- You process heading text for display or analysis
+
+**Who is NOT Affected**: You are NOT affected if:
+- You only use structural fields (IDs, word counts, quality scores)
+- You don't process hierarchy text values
+- You're using the library for the first time
+
+**Migration**:
+
+If you have code that depends on the buggy spacing, update your assertions/logic:
+
+```python
+# OLD (buggy behavior - update this)
+if chunk.hierarchy["level_1"] == "Introduction to HTMLTesting":
+    process_introduction()
+
+# NEW (correct behavior)
+if chunk.hierarchy["level_1"] == "Introduction to HTML Testing":
+    process_introduction()
+```
+
+**Upgrade Command**:
+```bash
+# Re-extract documents with corrected spacing
+extract documents/ -r --output-dir outputs/
+```
+
 ## Migration Paths
 
 ### From `book_parser_no_footnotes.py`

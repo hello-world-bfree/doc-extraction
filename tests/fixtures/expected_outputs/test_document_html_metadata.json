@@ -20,7 +20,7 @@
     "source_file": "test_document.html",
     "parser_version": "2.0.0-html",
     "md_schema_version": "2025-09-08",
-    "ingestion_ts": "2025-12-28T10:02:28.221100",
+    "ingestion_ts": "2025-12-29T18:39:01.872798",
     "content_hash": "0e39fa220ee0d11fbfed3e995738cb1ff61f7232"
   },
   "quality": {

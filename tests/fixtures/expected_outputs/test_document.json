@@ -12,7 +12,7 @@
     "language": "en",
     "publisher": "ReportLab PDF Library - (opensource)",
     "pages": "approximately 2",
-    "word_count": "approximately 288",
+    "word_count": "approximately 290",
     "source_identifiers": {},
     "md_schema_version": "",
     "footnote_index_count": 0,
@@ -21,7 +21,7 @@
       "source_file": "test_document.pdf",
       "parser_version": "2.0.0-pdf",
       "md_schema_version": "2025-09-08",
-      "ingestion_ts": "2025-12-28T10:02:03.202998",
+      "ingestion_ts": "2025-12-29T18:39:14.670297",
       "content_hash": "fdf97f8f0e751ff49e422dd94b7dae4cced64d45"
     },
     "quality": {
@@ -39,7 +39,7 @@
     {
       "stable_id": "9138c5eba94ba310",
       "paragraph_id": 1,
-      "text": "Sample PDFDocument Test Author Introduction to PDFTesting This is a sample document for testing the PDF extractor. It contains various elements that should be properly extracted including headings at multiple levels, paragraphs with varying lengths, and embedded references. Basic Structure This paragraph demonstrates basic text extraction from PDF. It should be captured as a single chunk with proper hierarchy tracking showing the main heading and subheadings. The extractor should handle multi-line paragraphs correctly. Subsection Example Here we have a level 3 heading with some content beneath it. The hierarchy should show all three levels properly nested. The PDF extractor uses heuristics to detect headings based on font size and text characteristics. Text Features and Formatting This section contains a longer paragraph to test the word count and chunking functionality. It should be extracted as a complete chunk with accurate word counts and character counts. The text should maintain proper spacing and formatting even when extracted from the PDF structure. Key Points (cid:127) First bullet point demonstrating list-like content in PDF format (cid:127) Second bullet point with additional text for testing (cid:127) Third bullet point showing consistent formatting References and Citations This section contains sample references. See Chapter 7 for more details. Compare with Section 3.2 mentioned above. Cross-references like these should be detected by the extraction system. Biblical Citations This text mentions Ephesians 2:8-9 and Philippians 4:13 as sample scripture references that should be detected by the Catholic analyzer and extraction system. These references demonstrate the domain-specific analysis capabilities. Conclusion",
+      "text": "Sample PDF Document Test Author Introduction to PDF Testing This is a sample document for testing the PDF extractor. It contains various elements that should be properly extracted including headings at multiple levels, paragraphs with varying lengths, and embedded references. Basic Structure This paragraph demonstrates basic text extraction from PDF. It should be captured as a single chunk with proper hierarchy tracking showing the main heading and subheadings. The extractor should handle multi-line paragraphs correctly. Subsection Example Here we have a level 3 heading with some content beneath it. The hierarchy should show all three levels properly nested. The PDF extractor uses heuristics to detect headings based on font size and text characteristics. Text Features and Formatting This section contains a longer paragraph to test the word count and chunking functionality. It should be extracted as a complete chunk with accurate word counts and character counts. The text should maintain proper spacing and formatting even when extracted from the PDF structure. Key Points (cid:127) First bullet point demonstrating list-like content in PDF format (cid:127) Second bullet point with additional text for testing (cid:127) Third bullet point showing consistent formatting References and Citations This section contains sample references. See Chapter 7 for more details. Compare with Section 3.2 mentioned above. Cross-references like these should be detected by the extraction system. Biblical Citations This text mentions Ephesians 2:8-9 and Philippians 4:13 as sample scripture references that should be detected by the Catholic analyzer and extraction system. These references demonstrate the domain-specific analysis capabilities. Conclusion",
       "hierarchy": {
         "level_1": "",
         "level_2": "",
@@ -51,8 +51,8 @@
       "chapter_href": "page_1",
       "source_order": 1,
       "source_tag": "p",
-      "text_length": 1755,
-      "word_count": 250,
+      "text_length": 1757,
+      "word_count": 252,
       "cross_references": [
         "See Chapter 7"
       ],
@@ -66,7 +66,7 @@
       "doc_stable_id": "7e9ecbbfbe55214f",
       "sentence_count": 18,
       "sentences": [
-        "Sample PDFDocument Test Author Introduction to PDFTesting This is a sample document for testing the PDF extractor.",
+        "Sample PDF Document Test Author Introduction to PDF Testing This is a sample document for testing the PDF extractor.",
         "It contains various elements that should be properly extracted including headings at multiple levels, paragraphs with varying lengths, and embedded references.",
         "Basic Structure This paragraph demonstrates basic text extraction from PDF.",
         "It should be captured as a single chunk with proper hierarchy tracking showing the main heading and subheadings.",
@@ -85,7 +85,7 @@
         "These references demonstrate the domain-specific analysis capabilities.",
         "Conclusion"
       ],
-      "normalized_text": "sample pdfdocument test author introduction to pdftesting this is a sample document for testing the pdf extractor. it contains various elements that should be properly extracted including headings at multiple levels, paragraphs with varying lengths, and embedded references. basic structure this paragraph demonstrates basic text extraction from pdf. it should be captured as a single chunk with proper hierarchy tracking showing the main heading and subheadings. the extractor should handle multi-line paragraphs correctly. subsection example here we have a level 3 heading with some content beneath it. the hierarchy should show all three levels properly nested. the pdf extractor uses heuristics to detect headings based on font size and text characteristics. text features and formatting this section contains a longer paragraph to test the word count and chunking functionality. it should be extracted as a complete chunk with accurate word counts and character counts. the text should maintain proper spacing and formatting even when extracted from the pdf structure. key points (cid:127) first bullet point demonstrating list-like content in pdf format (cid:127) second bullet point with additional text for testing (cid:127) third bullet point showing consistent formatting references and citations this section contains sample references. see chapter 7 for more details. compare with section 3.2 mentioned above. cross-references like these should be detected by the extraction system. biblical citations this text mentions ephesians 2:8-9 and philippians 4:13 as sample scripture references that should be detected by the catholic analyzer and extraction system. these references demonstrate the domain-specific analysis capabilities. conclusion"
+      "normalized_text": "sample pdf document test author introduction to pdf testing this is a sample document for testing the pdf extractor. it contains various elements that should be properly extracted including headings at multiple levels, paragraphs with varying lengths, and embedded references. basic structure this paragraph demonstrates basic text extraction from pdf. it should be captured as a single chunk with proper hierarchy tracking showing the main heading and subheadings. the extractor should handle multi-line paragraphs correctly. subsection example here we have a level 3 heading with some content beneath it. the hierarchy should show all three levels properly nested. the pdf extractor uses heuristics to detect headings based on font size and text characteristics. text features and formatting this section contains a longer paragraph to test the word count and chunking functionality. it should be extracted as a complete chunk with accurate word counts and character counts. the text should maintain proper spacing and formatting even when extracted from the pdf structure. key points (cid:127) first bullet point demonstrating list-like content in pdf format (cid:127) second bullet point with additional text for testing (cid:127) third bullet point showing consistent formatting references and citations this section contains sample references. see chapter 7 for more details. compare with section 3.2 mentioned above. cross-references like these should be detected by the extraction system. biblical citations this text mentions ephesians 2:8-9 and philippians 4:13 as sample scripture references that should be detected by the catholic analyzer and extraction system. these references demonstrate the domain-specific analysis capabilities. conclusion"
     },
     {
       "stable_id": "41ceca953cc53742",

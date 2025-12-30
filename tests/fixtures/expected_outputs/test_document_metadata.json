@@ -11,7 +11,7 @@
   "language": "en",
   "publisher": "ReportLab PDF Library - (opensource)",
   "pages": "approximately 2",
-  "word_count": "approximately 288",
+  "word_count": "approximately 290",
   "source_identifiers": {},
   "md_schema_version": "",
   "footnote_index_count": 0,
@@ -20,7 +20,7 @@
     "source_file": "test_document.pdf",
     "parser_version": "2.0.0-pdf",
     "md_schema_version": "2025-09-08",
-    "ingestion_ts": "2025-12-28T10:02:03.202998",
+    "ingestion_ts": "2025-12-29T18:39:14.670297",
     "content_hash": "fdf97f8f0e751ff49e422dd94b7dae4cced64d45"
   },
   "quality": {

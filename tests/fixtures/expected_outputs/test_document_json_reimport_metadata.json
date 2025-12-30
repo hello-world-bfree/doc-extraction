@@ -1,5 +1,5 @@
 {
-  "title": "Sample Markdown Document",
+  "title": "Sample HTML Document",
   "author": "Test Author",
   "document_type": "",
   "date_promulgated": "",
@@ -11,17 +11,17 @@
   "language": "en",
   "publisher": "",
   "pages": "",
-  "word_count": "approximately 153",
+  "word_count": "approximately 224",
   "source_identifiers": {},
   "md_schema_version": "",
   "footnote_index_count": 0,
   "provenance": {
-    "doc_id": "16cce66e6ed52e3b",
-    "source_file": "test_document_md.json",
+    "doc_id": "d10e802b407808d9",
+    "source_file": "test_document_html.json",
     "parser_version": "2.0.0-json-import",
     "md_schema_version": "2025-09-08",
-    "ingestion_ts": "2025-12-28T10:05:12.935614",
-    "content_hash": "be7114ca040f2f114736603b53ea402c7ba6bf31"
+    "ingestion_ts": "2025-12-29T18:39:25.966765",
+    "content_hash": "13da2d714abf007ef161fc2dd52b5b19e37ab964"
   },
   "quality": {
     "signals": {

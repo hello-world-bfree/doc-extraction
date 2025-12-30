@@ -116,7 +116,7 @@ class TestHtmlIntegration:
 
         # Verify hierarchy structure
         for chunk in hierarchical_chunks:
-            assert chunk.hierarchy["level_1"] == "Introduction to HTMLTesting"
+            assert chunk.hierarchy["level_1"] == "Introduction to HTML Testing"
 
     def test_html_multiple_heading_levels(self):
         """Verify HTML handles multiple heading levels (h1-h4)."""
@@ -319,6 +319,65 @@ class TestCrossFormatComparison:
             # (PDF might not due to text extraction limitations)
             if name != "PDF":
                 assert len(all_refs) > 0, f"{name} should detect scripture references"
+
+
+class TestTextSpacingCorrectness:
+    """
+    Explicit tests to prevent text spacing bugs.
+
+    These tests verify that text extraction maintains proper spacing
+    between words, especially when extracting from nested HTML/XML elements.
+    """
+
+    @pytest.mark.skipif(not HTML_SAMPLE.exists(), reason="HTML sample needed")
+    def test_html_heading_spacing_preserved(self):
+        """Verify HTML heading extraction preserves spaces between words."""
+        extractor = HtmlExtractor(str(HTML_SAMPLE))
+        extractor.load()
+        extractor.parse()
+
+        # Find chunks with "Introduction" heading
+        intro_chunks = [
+            c for c in extractor.chunks
+            if c.hierarchy.get("level_1", "").startswith("Introduction")
+        ]
+
+        assert len(intro_chunks) > 0, "Should have chunks under Introduction heading"
+
+        # Verify NO smashed words in hierarchy
+        heading = intro_chunks[0].hierarchy["level_1"]
+
+        # These patterns indicate spacing bugs
+        bad_patterns = [
+            "HTMLTesting",  # Should be "HTML Testing"
+            "toHTML",       # Should be "to HTML"
+        ]
+
+        for bad_pattern in bad_patterns:
+            assert bad_pattern not in heading, \
+                f"Heading contains smashed words: '{heading}' contains '{bad_pattern}'"
+
+        # Positive assertion - should contain properly spaced version
+        assert "HTML Testing" in heading, \
+            f"Heading should contain 'HTML Testing': '{heading}'"
+
+    @pytest.mark.skipif(not HTML_SAMPLE.exists(), reason="HTML sample needed")
+    def test_no_double_spaces_in_output(self):
+        """Verify text cleaning doesn't introduce double spaces."""
+        extractor = HtmlExtractor(str(HTML_SAMPLE))
+        extractor.load()
+        extractor.parse()
+
+        for chunk in extractor.chunks:
+            # Should have no double spaces
+            assert "  " not in chunk.text, \
+                f"Chunk {chunk.paragraph_id} has double spaces: '{chunk.text}'"
+
+            # Hierarchy should also have no double spaces
+            for level, text in chunk.hierarchy.items():
+                if text:
+                    assert "  " not in text, \
+                        f"Hierarchy {level} has double spaces: '{text}'"
 
 
 if __name__ == "__main__":

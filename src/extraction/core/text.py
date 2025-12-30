@@ -28,9 +28,7 @@ def normalize_spaced_caps(s: str) -> str:
         return s
     # A) "S E C O N D" → "SECOND"
     s = re.sub(r'\b(?:[A-Z]\s){2,}[A-Z]\b', lambda m: m.group(0).replace(' ', ''), s)
-    # B) "P RODIGAL" → "PRODIGAL" (but not "A Word" → "AWord")
-    s = re.sub(r'(?<=[A-Z])([A-Z])\s(?=[A-Z][a-z])', r'\1', s)
-    # C) "S ON" → "SON"
+    # B) "S ON" → "SON" (also handles "P RODIGAL" → "PRODIGAL")
     s = re.sub(r'\b([A-Z])\s(?=[A-Z]{2,}\b)', r'\1', s)
     return s
 

@@ -147,6 +147,9 @@ class TestTextUtilsRegression:
             ("P RODIGAL", "PRODIGAL"),
             ("S ON", "SON"),
             ("Already Normal", "Already Normal"),  # No change
+            # Regression cases - verify bug fix (spacing preserved)
+            ("Introduction to HTML Testing", "Introduction to HTML Testing"),
+            ("About XML Documents", "About XML Documents"),
         ]
 
         for input_text, expected in test_cases:

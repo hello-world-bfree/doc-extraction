@@ -56,6 +56,10 @@ class TestText:
         assert normalize_spaced_caps("S ON") == "SON"
         assert normalize_spaced_caps("A Word") == "A Word"  # Should not change
         assert normalize_spaced_caps("") == ""
+        # Regression tests for spacing bug fix
+        assert normalize_spaced_caps("Introduction to HTML Testing") == "Introduction to HTML Testing"
+        assert normalize_spaced_caps("About XML Documents") == "About XML Documents"
+        assert normalize_spaced_caps("Data from PDF Parser") == "Data from PDF Parser"
 
     def test_clean_text(self):
         assert clean_text("hello  world") == "hello world"

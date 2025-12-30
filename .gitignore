@@ -131,3 +131,49 @@ dmypy.json
 # OS
 .DS_Store
 Thumbs.db
+
+# ============================================================================
+# Project-Specific Patterns
+# ============================================================================
+
+# Vatican extraction outputs and downloads
+vatican_archive/
+
+# EPUB debug dumps (created with --debug-dump flag)
+debug/
+
+# Temporary extraction outputs
+outputs/
+temp_outputs/
+*_output.json
+*_output_*.json
+
+# Hierarchy report files (auto-generated, not source)
+*_hierarchy_report.txt
+
+# Temporary test files (root level only, not tests/ directory)
+/test_*.py
+/test_env.py
+
+# Downloaded sample documents (large files)
+*.epub
+*.pdf
+# Exception: Keep small test fixtures
+!tests/fixtures/sample_data/*.epub
+!tests/fixtures/sample_data/*.pdf
+
+# Extraction CLI output files (if running from root)
+/chunks.json
+/metadata.json
+
+# Temporary JSON outputs from testing
+test_spacing.json
+test_output*.json
+
+# UV lock file (uncomment if you don't want to track it)
+# For libraries, uv.lock is often not committed
+# For applications, it's typically committed
+# uv.lock
+
+# Claude Code plans (session-specific planning)
+.claude/plans/
