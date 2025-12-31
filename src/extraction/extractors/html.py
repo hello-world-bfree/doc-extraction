@@ -27,6 +27,7 @@ from ..core.extraction import (
     extract_dates,
     extract_scripture_references,
 )
+from ..core.formatting import FormattedTextBuilder
 from ..core.identifiers import stable_id
 from ..core.models import Chunk, Metadata
 from ..core.text import clean_text, estimate_word_count
@@ -60,6 +61,19 @@ class HtmlExtractor(BaseExtractor):
         # Configuration
         self.min_paragraph_words = self.config.get("min_paragraph_words", 1)
         self.preserve_links = self.config.get("preserve_links", False)
+
+        # Formatting preservation config (new in v2.1)
+        self.preserve_formatting = bool(self.config.get("preserve_formatting", False))
+        if self.preserve_formatting:
+            self.formatter = FormattedTextBuilder(
+                preserve_line_breaks=self.config.get("preserve_line_breaks", True),
+                preserve_emphasis=self.config.get("preserve_emphasis", True),
+                preserve_lists=self.config.get("preserve_lists", True),
+                preserve_blockquotes=self.config.get("preserve_blockquotes", True),
+                preserve_tables=self.config.get("preserve_tables", False),
+            )
+        else:
+            self.formatter = None
 
         # HTML content
         self.soup = None
@@ -150,6 +164,16 @@ class HtmlExtractor(BaseExtractor):
                 continue
 
             # Handle text blocks (p, div, li, blockquote)
+            # BEFORE flattening, extract formatted representations if configured
+            formatted_text = None
+            structure_metadata = None
+            if self.preserve_formatting and self.formatter:
+                try:
+                    formatted_text = self.formatter.extract_formatted_text(elem)
+                    structure_metadata = self.formatter.extract_structure_metadata(elem)
+                except Exception as e:
+                    LOGGER.debug("Formatting extraction error for %s: %s", tag_name, e)
+
             text = elem.get_text(separator=' ', strip=True)
             if not text:
                 continue
@@ -192,6 +216,8 @@ class HtmlExtractor(BaseExtractor):
                 sentence_count=len(sentences),
                 sentences=sentences,
                 normalized_text=cleaned.lower(),
+                formatted_text=formatted_text,
+                structure_metadata=structure_metadata,
             )
 
             self.chunks.append(chunk)

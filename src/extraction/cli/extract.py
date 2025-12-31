@@ -302,6 +302,68 @@ def main():
         help="Regex for class denylist [EPUB]",
     )
 
+    # Formatting preservation options (v2.1+)
+    formatting_group = ap.add_argument_group('Formatting Preservation (v2.1+)')
+    formatting_group.add_argument(
+        "--preserve-formatting",
+        action="store_true",
+        help="Preserve structural formatting (line breaks, lists, blockquotes, etc.)",
+    )
+    formatting_group.add_argument(
+        "--preserve-line-breaks",
+        action="store_true",
+        default=True,
+        help="Preserve line breaks in poetry/verse (default: True when --preserve-formatting enabled)",
+    )
+    formatting_group.add_argument(
+        "--no-preserve-line-breaks",
+        dest="preserve_line_breaks",
+        action="store_false",
+        help="Disable line break preservation",
+    )
+    formatting_group.add_argument(
+        "--preserve-emphasis",
+        action="store_true",
+        default=True,
+        help="Preserve em/strong emphasis (default: True when --preserve-formatting enabled)",
+    )
+    formatting_group.add_argument(
+        "--no-preserve-emphasis",
+        dest="preserve_emphasis",
+        action="store_false",
+        help="Disable emphasis preservation",
+    )
+    formatting_group.add_argument(
+        "--preserve-lists",
+        action="store_true",
+        default=True,
+        help="Preserve list structure and nesting (default: True when --preserve-formatting enabled)",
+    )
+    formatting_group.add_argument(
+        "--no-preserve-lists",
+        dest="preserve_lists",
+        action="store_false",
+        help="Disable list preservation",
+    )
+    formatting_group.add_argument(
+        "--preserve-blockquotes",
+        action="store_true",
+        default=True,
+        help="Preserve blockquote boundaries (default: True when --preserve-formatting enabled)",
+    )
+    formatting_group.add_argument(
+        "--no-preserve-blockquotes",
+        dest="preserve_blockquotes",
+        action="store_false",
+        help="Disable blockquote preservation",
+    )
+    formatting_group.add_argument(
+        "--preserve-tables",
+        action="store_true",
+        default=False,
+        help="Preserve table structure (default: False, experimental)",
+    )
+
     # Logging
     ap.add_argument(
         "--verbose",
@@ -344,6 +406,13 @@ def main():
         "preserve_hierarchy_across_docs": args.preserve_hierarchy,
         "reset_depth": args.reset_depth,
         "class_denylist": args.deny_class,
+        # Formatting preservation (v2.1+)
+        "preserve_formatting": args.preserve_formatting,
+        "preserve_line_breaks": args.preserve_line_breaks if args.preserve_formatting else False,
+        "preserve_emphasis": args.preserve_emphasis if args.preserve_formatting else False,
+        "preserve_lists": args.preserve_lists if args.preserve_formatting else False,
+        "preserve_blockquotes": args.preserve_blockquotes if args.preserve_formatting else False,
+        "preserve_tables": args.preserve_tables if args.preserve_formatting else False,
     }
 
     # Single-file mode

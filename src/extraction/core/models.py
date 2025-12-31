@@ -52,6 +52,9 @@ class Chunk:
     resolved_footnotes: Optional[Dict[str, str]] = None
     ocr: Optional[bool] = None
     ocr_conf: Optional[float] = None
+    # NEW: Optional formatting fields for preserving structural intent
+    formatted_text: Optional[str] = None
+    structure_metadata: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dict format matching current output.
@@ -97,6 +100,7 @@ class Metadata:
     """Document-level metadata."""
     title: str = ""
     author: str = ""
+    description: str = ""
     document_type: str = ""
     date_promulgated: str = ""
     subject: List[str] = field(default_factory=list)

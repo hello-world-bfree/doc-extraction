@@ -33,6 +33,7 @@ from ..core.extraction import (
     extract_dates,
     extract_scripture_references,
 )
+from ..core.formatting import FormattedTextBuilder
 from ..core.identifiers import sha1, stable_id
 from ..core.models import Chunk, Metadata
 from ..core.quality import quality_signals_from_text, route_doc, score_quality
@@ -393,6 +394,19 @@ class EpubExtractor(BaseExtractor):
             self.config.get("class_denylist", r"^(?:calibre\d+|note|footnote)$"), re.I
         )
 
+        # Formatting preservation config (new in v2.1)
+        self.preserve_formatting = bool(self.config.get("preserve_formatting", False))
+        if self.preserve_formatting:
+            self.formatter = FormattedTextBuilder(
+                preserve_line_breaks=self.config.get("preserve_line_breaks", True),
+                preserve_emphasis=self.config.get("preserve_emphasis", True),
+                preserve_lists=self.config.get("preserve_lists", True),
+                preserve_blockquotes=self.config.get("preserve_blockquotes", True),
+                preserve_tables=self.config.get("preserve_tables", False),
+            )
+        else:
+            self.formatter = None
+
         # Current hierarchy state
         self.current_hierarchy = {f"level_{i}": "" for i in range(1, 7)}
 
@@ -447,6 +461,18 @@ class EpubExtractor(BaseExtractor):
             for n in self.book.toc:
                 walk(n)
 
+    def _clean_description(self, desc: str) -> str:
+        """Clean description by stripping HTML tags and normalizing text."""
+        if not desc:
+            return ""
+
+        # Parse HTML and extract text content
+        soup = BeautifulSoup(desc, "html.parser")
+        text = soup.get_text(separator=" ", strip=True)
+
+        # Apply standard text cleaning
+        return clean_text(text)
+
     def _sanitize_dom(self, soup: BeautifulSoup):
         """Remove scripts, styles, footnote refs, and flatten small-caps."""
         for t in soup(["script", "style"]):
@@ -455,8 +481,11 @@ class EpubExtractor(BaseExtractor):
             'a[epub|type="noteref"], a[epub\\:type="noteref"], sup.noteref, sup.footnote, a.footnote, a.noteref'
         ):
             t.decompose()
-        for br in soup.find_all("br"):
-            br.replace_with(" ")
+        # Only replace <br> with spaces if NOT preserving formatting
+        if not self.preserve_formatting:
+            for br in soup.find_all("br"):
+                br.replace_with(" ")
+        # Otherwise keep <br> tags for line break detection in formatter
         # flatten small-caps/dropcaps
         for sc in soup.select('.smallcaps, .smcap, .sc, .caps, [style*="small-caps"]'):
             txt = sc.get_text("", strip=True)
@@ -547,7 +576,7 @@ class EpubExtractor(BaseExtractor):
         try:
             raw_html = item.get_content()
             try:
-                soup = BeautifulSoup(raw_html, "lxml")
+                soup = BeautifulSoup(raw_html, "lxml-xml")
             except Exception:
                 try:
                     import html5lib  # noqa: F401
@@ -574,7 +603,7 @@ class EpubExtractor(BaseExtractor):
                 f"level_{i}": self.current_hierarchy[f"level_{i}"] for i in range(1, 7)
             }
 
-        def flush_paragraph(text: str, source_tag: str) -> None:
+        def flush_paragraph(text: str, source_tag: str, formatted_text: Optional[str] = None, structure_metadata: Optional[Dict[str, Any]] = None) -> None:
             nonlocal global_para_id
             text = clean_text(text)
             if not text or estimate_word_count(text) < self.min_paragraph_words:
@@ -640,6 +669,12 @@ class EpubExtractor(BaseExtractor):
                     "by_sentence": by_sentence,
                 }
 
+            # Attach formatted text and structure metadata (NEW in v2.1)
+            if formatted_text is not None:
+                chunk["formatted_text"] = formatted_text
+            if structure_metadata is not None:
+                chunk["structure_metadata"] = structure_metadata
+
             self.chunks_dict.append(chunk)
 
         body = soup.find("body") or soup
@@ -687,6 +722,16 @@ class EpubExtractor(BaseExtractor):
             if classes and self.class_denylist_re.search(classes):
                 continue
 
+            # BEFORE flattening, extract formatted representations if configured
+            formatted_text = None
+            structure_metadata = None
+            if self.preserve_formatting and self.formatter:
+                try:
+                    formatted_text = self.formatter.extract_formatted_text(el)
+                    structure_metadata = self.formatter.extract_structure_metadata(el)
+                except Exception as e:
+                    LOGGER.debug("Formatting extraction error for %s: %s", tag, e)
+
             txt = clean_text(el.get_text(" "))
             if not txt:
                 continue
@@ -697,9 +742,9 @@ class EpubExtractor(BaseExtractor):
                 continue  # fixed windows later
 
             if tag == "li":
-                flush_paragraph(f"• {txt}", "li")
+                flush_paragraph(f"• {txt}", "li", formatted_text, structure_metadata)
             elif tag in {"p", "blockquote", "pre", "figure"}:
-                flush_paragraph(txt, tag)
+                flush_paragraph(txt, tag, formatted_text, structure_metadata)
             elif tag in {
                 "section",
                 "article",
@@ -716,7 +761,7 @@ class EpubExtractor(BaseExtractor):
                 if estimate_word_count(txt) >= max(
                     2 * self.min_paragraph_words, self.min_block_words
                 ):
-                    flush_paragraph(txt, tag)
+                    flush_paragraph(txt, tag, formatted_text, structure_metadata)
 
         # Fixed windows for route C
         fixed_text = " ".join(texts_for_doc_hash)
@@ -817,6 +862,11 @@ class EpubExtractor(BaseExtractor):
                 if self.book.get_metadata("DC", "creator")
                 else ""
             ),
+            "description": self._clean_description(
+                self.book.get_metadata("DC", "description")[0][0]
+                if self.book.get_metadata("DC", "description")
+                else ""
+            ),
             "language": clean_text(
                 self.book.get_metadata("DC", "language")[0][0]
                 if self.book.get_metadata("DC", "language")
@@ -840,6 +890,7 @@ class EpubExtractor(BaseExtractor):
         self.metadata = Metadata(
             title=metadata_dict.get("title", ""),
             author=metadata_dict.get("author", ""),
+            description=metadata_dict.get("description", ""),
             document_type=metadata_dict.get("document_type", ""),
             date_promulgated=metadata_dict.get("date_promulgated", ""),
             subject=metadata_dict.get("subject", []),
@@ -882,6 +933,11 @@ class EpubExtractor(BaseExtractor):
             "author": clean_text(
                 self.book.get_metadata("DC", "creator")[0][0]
                 if self.book.get_metadata("DC", "creator")
+                else ""
+            ),
+            "description": self._clean_description(
+                self.book.get_metadata("DC", "description")[0][0]
+                if self.book.get_metadata("DC", "description")
                 else ""
             ),
             "language": clean_text(
