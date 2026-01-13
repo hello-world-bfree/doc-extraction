@@ -1,5 +1,5 @@
 [project]
-name = "extraction"
+name = "doc-extraction"
 version = "0.0.1"
 description = "Multi-format document extraction library for EPUB, PDF, HTML, Markdown, and JSON documents"
 readme = "README.md"
@@ -73,8 +73,28 @@ token-rechunk = "extraction.tools.token_rechunker:main"
 extract-images = "extraction.cli.scrape_images:main"
 
 [build-system]
-requires = ["uv>=0.5.11,<0.6.0"]
-build-backend = "uv"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/extraction"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "tests",
+    "examples",
+    "fidelity_testing",
+    "qa_results",
+    "__to_delete",
+    "site",
+    "images",
+    "docs/explanation",
+    ".claude",
+    "*.egg-info",
+    "build",
+    "coverage.json",
+    ".envrc",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
