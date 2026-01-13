@@ -1,0 +1,1089 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+EPUB extractor with hierarchical chunking, quality routing, and Catholic cross-refs.
+
+Refactored from book_parser_no_footnotes.py to use core utilities and BaseExtractor.
+Maintains exact backward compatibility with original parser behavior.
+"""
+
+import logging
+import os
+import re
+from collections import Counter, OrderedDict
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
+
+import ebooklib
+from bs4 import BeautifulSoup
+from ebooklib import epub
+
+from .base import BaseExtractor
+from .configs import EpubExtractorConfig
+from ..analyzers.catholic import CatholicAnalyzer
+from ..analyzers.base import BaseAnalyzer
+from ..exceptions import FileNotFoundError as FileNotFoundError_, ParseError, DependencyError
+from ..core.chunking import (
+    heading_level,
+    heading_path,
+    hierarchy_depth,
+    is_heading_tag,
+    split_sentences,
+)
+from ..core.extraction import (
+    extract_cross_references,
+    extract_dates,
+    extract_scripture_references,
+)
+from ..core.identifiers import sha1, stable_id
+from ..core.models import Chunk, Metadata
+from ..core.quality import quality_signals_from_text, route_doc, score_quality
+from ..core.text import (
+    MONTHS,
+    clean_text,
+    clean_toc_title,
+    estimate_word_count,
+    normalize_ascii,
+    normalize_spaced_caps,
+)
+
+# ====================== Constants ======================
+
+PARSER_VERSION = "2.0.0-refactored"
+MD_SCHEMA_VERSION = "2025-09-08"
+FOOTNOTE_MAX = 999  # cap to reduce false positives
+
+LOGGER = logging.getLogger("epub_parser")
+
+
+# ====================== Footnote Detection ======================
+
+
+def detect_trailing_footnotes(sentence: str) -> List[int]:
+    """
+    Detect footnote numbers at end of a sentence.
+    Recognizes: "... 10", "...[10]", "...(10)" (optionally followed by period/quote).
+    Guards:
+      - ignore verse-like endings "... 3:16"
+      - ignore decimals "... 3.14"
+      - cap number at FOOTNOTE_MAX
+    """
+    tail = sentence.strip()
+
+    # bail if we see a colon near the end (likely verse refs like 3:16)
+    if re.search(r'[:]\s*\d{1,4}\s*[""\'.)]*$', tail):
+        return []
+
+    # bail if decimal like 3.14 at end
+    if re.search(r'\b\d+\.\d+\s*[""\'.)]*$', tail):
+        return []
+
+    # collect patterns near the very end (allow quotes/period after)
+    candidates: List[str] = []
+    patterns = [
+        r'(?:\(|\[)\s*(\d{1,4})\s*(?:\)|\])\s*[""\'.)]*$',  # (10) or [10]
+        r'[\s,;](\d{1,4})\s*[""\'.)]*$',  # ... 10."
+    ]
+    for pat in patterns:
+        m = re.search(pat, tail)
+        if m:
+            candidates.append(m.group(1))
+
+    nums: List[int] = []
+    for c in candidates:
+        try:
+            n = int(c)
+            if 1 <= n <= FOOTNOTE_MAX:
+                nums.append(n)
+        except ValueError:
+            pass
+
+    # dedupe while preserving order
+    seen = set()
+    out: List[int] = []
+    for n in nums:
+        if n not in seen:
+            out.append(n)
+            seen.add(n)
+    return out
+
+
+# ====================== Metadata Extractor ======================
+
+
+class MetadataExtractor:
+    """
+    Extract rich metadata from EPUB + chunks.
+    Unchanged from original implementation except for import changes.
+    """
+
+    def __init__(self, href_to_toc_title: Dict[str, str]):
+        self.href_to_toc_title = href_to_toc_title
+        self.metadata: Dict[str, Any] = {
+            "title": "",
+            "author": "",
+            "document_type": "",
+            "date_promulgated": "",
+            "subject": [],
+            "key_themes": [],
+            "related_documents": [],
+            "time_period": "",
+            "geographic_focus": "",
+            "language": "",
+            "publisher": "",
+            "pages": "",
+            "word_count": "",
+            "source_identifiers": {"toc_map": href_to_toc_title or {}},
+            "md_schema_version": MD_SCHEMA_VERSION,
+        }
+
+    def extract_from_epub(
+        self, book: epub.EpubBook, chunks: List[Dict]
+    ) -> Dict[str, Any]:
+        """Extract all metadata from EPUB and chunks."""
+        self.metadata["title"] = clean_text(
+            book.get_metadata("DC", "title")[0][0]
+            if book.get_metadata("DC", "title")
+            else ""
+        )
+        self.metadata["author"] = clean_text(
+            book.get_metadata("DC", "creator")[0][0]
+            if book.get_metadata("DC", "creator")
+            else ""
+        )
+        self.metadata["language"] = clean_text(
+            book.get_metadata("DC", "language")[0][0]
+            if book.get_metadata("DC", "language")
+            else ""
+        )
+        self.metadata["publisher"] = clean_text(
+            book.get_metadata("DC", "publisher")[0][0]
+            if book.get_metadata("DC", "publisher")
+            else ""
+        )
+
+        all_text = " ".join(ch["text"] for ch in chunks)
+        self._infer_document_type(all_text)
+        self._extract_dates(all_text)
+        self._extract_subjects_and_themes(all_text, chunks)
+        self._extract_related_documents(all_text)
+        self._infer_geographic_focus(all_text)
+        self._calculate_stats(chunks)
+        self._rollup_footnotes(chunks)
+        return self.metadata
+
+    def _infer_document_type(self, text: str):
+        """Infer document type from text patterns."""
+        doc_type_patterns = {
+            "Dogmatic Constitution": [
+                r"\bdogmatic constitution\b",
+                r"constitutio dogmatica",
+            ],
+            "Pastoral Constitution": [
+                r"\bpastoral constitution\b",
+                r"constitutio pastoralis",
+            ],
+            "Apostolic Constitution": [
+                r"apostolic constitution",
+                r"constitutio apostolica",
+            ],
+            "Encyclical": [r"\bencyclical\b", r"litterae encyclicae"],
+            "Apostolic Exhortation": [r"apostolic exhortation", r"adhortatio"],
+            "Apostolic Letter": [r"apostolic letter", r"\bepistula\b"],
+            "Motu Proprio": [r"\bmotu proprio\b"],
+            "Decree": [r"\bdecree\b", r"\bdecretum\b"],
+            "Instruction": [r"\binstruction\b", r"\binstructio\b"],
+            "Declaration": [r"\bdeclaration\b", r"\bdeclaratio\b"],
+            "Constitution": [r"\bconstitution\b", r"\bconstitutio\b"],
+        }
+        tl = text.lower()
+        for name, pats in doc_type_patterns.items():
+            if any(re.search(p, tl) for p in pats):
+                self.metadata["document_type"] = name
+                break
+
+    def _extract_dates(self, text: str):
+        """Extract promulgation date from text."""
+        dates = extract_dates(text)
+        if dates:
+            ctx = re.search(
+                rf"(?:promulgated?|given|issued|published).*?((?:{MONTHS})\s+\d{{1,2}}(?:st|nd|rd|th)?\,?\s+\d{{4}})",
+                text,
+                re.IGNORECASE,
+            )
+            self.metadata["date_promulgated"] = ctx.group(1) if ctx else dates[0]
+
+    def _extract_subjects_and_themes(self, text: str, chunks: List[Dict]):
+        """Extract subject areas and key themes."""
+        subject_patterns = {
+            "Liturgy": [
+                r"\blitur(?:gy|gica|gical)\b",
+                r"liturgy of the hours",
+                r"officium divinum",
+            ],
+            "Mass": [r"\bmass\b", r"eucharist", r"holy sacrifice"],
+            "Divine Office": [r"divine office", r"breviary", r"breviarium"],
+            "Sacraments": [
+                r"\bsacrament",
+                r"\bbaptism\b",
+                r"\bconfirmation\b",
+                r"\borders\b",
+                r"\bmarriage\b",
+                r"\breconciliation\b",
+                r"\banointing\b",
+            ],
+            "Magisterium": [r"\bmagisterium\b", r"\bapostolic see\b", r"\bholy see\b"],
+            "Ecclesiology": [
+                r"\bchurch\b",
+                r"\becclesia\b",
+                r"\bepiscopal\b",
+                r"\bbishop\b",
+                r"\bdiocese\b",
+                r"\bparish\b",
+            ],
+            "Mariology": [
+                r"\bmary\b",
+                r"\bimmaculate conception\b",
+                r"\bassumption\b",
+                r"\btheotokos\b",
+            ],
+            "Moral Theology": [
+                r"\bmoral\b",
+                r"\bethics\b",
+                r"\bconscience\b",
+                r"\bvirtue\b",
+            ],
+            "Scripture": [r"\bscripture\b", r"\bverbum\b", r"\bdivine revelation\b"],
+            "Canon Law": [r"canon law", r"code of canon law", r"\bcic\b", r"\bcceo\b"],
+            "Prayer": [r"\bprayer\b", r"\boratio\b", r"\bdevotion\b", r"\bro\sary\b"],
+            "Council Documents": [
+                r"vatican\s*(?:i|ii)",
+                r"council of trent",
+                r"lumen gentium",
+                r"dei verbum",
+            ],
+        }
+        tl = text.lower()
+        subjects = [
+            name
+            for name, pats in subject_patterns.items()
+            if any(re.search(p, tl) for p in pats)
+        ]
+        self.metadata["subject"] = subjects
+
+        themes: List[str] = []
+        for ch in chunks:
+            h = ch.get("hierarchy", {})
+            for level in ["level_1", "level_2", "level_3", "level_4"]:
+                head = h.get(level, "")
+                if head and len(head) > 10:
+                    themes.append(head)
+        self.metadata["key_themes"] = list(OrderedDict.fromkeys(themes))[:10]
+
+    def _extract_related_documents(self, text: str):
+        """Extract references to related Catholic documents."""
+        doc_patterns = [
+            "Sacrosanctum Concilium",
+            "Lumen Gentium",
+            "Dei Verbum",
+            "Gaudium et Spes",
+            "Dei Filius",
+            "Pastor Aeternus",
+            "Syllabus of Errors",
+            "Council of Trent",
+            "Trent",
+            "Quo Primum",
+            "Humanae Vitae",
+            "Laudato Si'",
+            "Fidei Depositum",
+            "Evangelii Nuntiandi",
+            "Missale Romanum",
+            "Liturgiam Authenticam",
+            "Mysterii Paschalis",
+            "Mediator Dei",
+            "Catechism of the Catholic Church",
+            "Roman Catechism",
+            "General Instruction of the Roman Missal",
+        ]
+        related = [p for p in doc_patterns if re.search(p, text, re.IGNORECASE)]
+        self.metadata["related_documents"] = sorted(set(related))
+
+    def _infer_geographic_focus(self, text: str):
+        """Infer geographic focus from text patterns."""
+        patterns = {
+            "Vatican City (Rome)": [
+                r"vatican",
+                r"\brome\b",
+                r"apostolic see",
+                r"holy see",
+            ],
+            "Universal Church": [
+                r"universal church",
+                r"catholic church",
+                r"whole church",
+            ],
+            "Diocese": [r"\bdiocese\b", r"\bepiscopal\b", r"\bbishop\b"],
+            "Parish": [r"\bparish\b", r"\bpastor\b", r"\bfaithful\b"],
+        }
+        tl = text.lower()
+        for loc, pats in patterns.items():
+            if any(re.search(p, tl) for p in pats):
+                self.metadata["geographic_focus"] = loc
+                break
+
+    def _calculate_stats(self, chunks: List[Dict]):
+        """Calculate word count and page estimates."""
+        total_words = sum(ch["word_count"] for ch in chunks)
+        self.metadata["word_count"] = f"approximately {total_words:,}"
+        pages = max(1, total_words // 250)
+        self.metadata["pages"] = f"approximately {pages}"
+
+    def _rollup_footnotes(self, chunks: List[Dict]):
+        """Aggregate footnote citations across all chunks."""
+        all_nums: List[int] = []
+        for ch in chunks:
+            f = ch.get("footnote_citations", {})
+            all_nums.extend(f.get("all", []))
+        if all_nums:
+            counts = Counter(all_nums)
+            self.metadata["footnotes_summary"] = {
+                "unique_citations": sorted(int(n) for n in set(all_nums)),
+                "counts": {str(k): int(v) for k, v in sorted(counts.items())},
+            }
+
+
+# ====================== EPUB Extractor ======================
+
+
+class EpubExtractor(BaseExtractor):
+    """
+    Extract hierarchical chunks from EPUB files.
+
+    Refactored from EpubParser to inherit from BaseExtractor while maintaining
+    exact backward compatibility with original parser behavior.
+    """
+
+    def __init__(
+        self,
+        epub_path: str,
+        config: Optional[EpubExtractorConfig] = None,
+        analyzer: Optional[BaseAnalyzer] = None
+    ):
+        """
+        Initialize EPUB extractor.
+
+        Args:
+            epub_path: Path to .epub file
+            config: Optional configuration dict with keys:
+                - toc_hierarchy_level: int (default 3)
+                - min_paragraph_words: int (default 6)
+                - min_block_words: int (default 30)
+                - preserve_hierarchy_across_docs: bool (default False)
+                - reset_depth: int (default 2)
+                - class_denylist: str regex (default "^(?:calibre\\d+|note|footnote)$")
+        """
+        super().__init__(epub_path, config or EpubExtractorConfig(), analyzer)
+
+        self.__book: Optional[epub.EpubBook] = None
+        self.__chunks_dict: List[Dict[str, Any]] = []  # temporary dict format
+        self.href_to_toc_title: Dict[str, str] = {}
+
+        # Config
+        self.toc_level = int(self.config.toc_hierarchy_level)
+        self.min_paragraph_words = int(self.config.min_paragraph_words)
+        self.min_block_words = int(self.config.min_block_words)
+        self.preserve_hierarchy_across_docs = bool(
+            self.config.preserve_hierarchy_across_docs
+        )
+        self.reset_depth = int(self.config.reset_depth)
+        self.class_denylist_re = re.compile(
+            self.config.class_denylist or r"^(?:calibre\d+|note|footnote)$", re.I
+        )
+
+        # Tiny chunk filtering config
+        self.filter_tiny_chunks = self.config.filter_tiny_chunks
+        # Options: "off", "conservative", "standard", "aggressive"
+        # Default: "conservative" (removes index/TOC/punctuation/figure labels - 47.6% reduction)
+
+        # Current hierarchy state
+        self.current_hierarchy = {f"level_{i}": "" for i in range(1, 7)}
+
+        # Optional debug dump flag
+        self.debug_dump: bool = False
+
+    @property
+    def chunks_dict(self) -> List[Dict[str, Any]]:
+        """Get chunks in dict format (backward compatibility)."""
+        return self.__chunks_dict
+    
+    @chunks_dict.setter
+    def chunks_dict(self, value: List[Dict[str, Any]]):
+        """Set chunks in dict format."""
+        self.__chunks_dict = value
+
+
+    def _do_load(self) -> None:
+        """Load EPUB file and build TOC mapping."""
+        LOGGER.info("Opening EPUB: %s", self.source_path)
+        try:
+            self.__book = epub.read_epub(self.source_path)
+        except Exception as e:
+            raise ParseError(self.source_path, f"Failed to load EPUB: {e}")
+
+        if not self.__book.spine:
+            raise ParseError(self.source_path, "EPUB has no spine (reading order)")
+
+        self._build_toc_mapping()
+        LOGGER.info("✓ EPUB loaded. TOC entries: %d", len(self.href_to_toc_title))
+
+        # Create provenance
+        src_bytes = open(self.source_path, "rb").read()
+        self._set_provenance(PARSER_VERSION, MD_SCHEMA_VERSION, src_bytes)
+
+    def _norm_href(self, href: Optional[str]) -> str:
+        """Normalize href by removing fragment and leading ./"""
+        return (href or "").split("#")[0].lstrip("./")
+
+    def _should_filter_tiny_chunk(self, chunk_dict: Dict[str, Any]) -> bool:
+        """
+        Determine if a tiny chunk (<5 words) should be filtered as noise.
+
+        Filter levels:
+        - "off": No filtering
+        - "conservative" (Tier 1): Filter obvious noise (index, TOC, punctuation, figure labels)
+        - "standard" (Tier 1+2): Add answer keys, single-word bullets, page references
+        - "aggressive" (All tiers): Add appendix content, cross-references
+
+        Returns:
+            True if chunk should be filtered (excluded), False to keep it.
+        """
+        if self.filter_tiny_chunks == "off":
+            return False
+
+        word_count = chunk_dict.get("word_count", 0)
+        if word_count >= 5:
+            return False  # Not tiny, keep it
+
+        text = chunk_dict.get("text", "").strip()
+        h = chunk_dict.get("hierarchy", {})
+        level_1 = h.get("level_1", "").lower()
+
+        # ===== TIER 1: Conservative Filters (Safe to remove) =====
+
+        # Filter 1.1: Index entries
+        if "index" in level_1:
+            return True
+
+        # Filter 1.2: Table of Contents entries
+        if "table of contents" in level_1 or "contents" in level_1:
+            return True
+
+        # Filter 1.3: Punctuation-only chunks (single letters, bullets, symbols)
+        alpha_chars = sum(c.isalnum() for c in text)
+        if alpha_chars <= 2:
+            return True
+
+        # Filter 1.4: Number-only chunks (page numbers)
+        if text.replace('.', '').replace(',', '').replace('-', '').replace(' ', '').isdigit():
+            return True
+
+        # Filter 1.5: Standalone figure/table/listing labels
+        if re.match(r'^(Figure|Table|Listing|Example|Diagram)\s+\d+', text, re.I):
+            return True
+
+        if self.filter_tiny_chunks == "conservative":
+            return False  # Only apply Tier 1 filters
+
+        # ===== TIER 2: Standard Filters (Likely noise) =====
+
+        # Filter 2.1: Answer keys in appendixes
+        if 'answer' in level_1 and re.match(r'^\d+\.\s+\w+$', text):
+            return True
+
+        # Filter 2.2: Single-word bullets (likely navigation)
+        if re.match(r'^[•·◦▪–—]\s+\w+$', text):
+            return True
+
+        # Filter 2.3: Page reference ranges
+        if re.match(r'^\d+\s*[–—-]\s*\d+$', text):
+            return True
+
+        if self.filter_tiny_chunks == "standard":
+            return False  # Only apply Tier 1+2 filters
+
+        # ===== TIER 3: Aggressive Filters (May remove valid content) =====
+
+        # Filter 3.1: All tiny chunks in appendixes
+        if 'appendix' in level_1 or 'appendices' in level_1:
+            return True
+
+        # Filter 3.2: Cross-references
+        if re.search(r'\bsee\s+(also|chapter|section|page)\b', text, re.I):
+            return True
+
+        return False
+
+    def _build_toc_mapping(self):
+        """Build mapping from href to TOC title."""
+        def walk(node):
+            try:
+                if isinstance(node, epub.Link):
+                    href = self._norm_href(node.href)
+                    raw_title = clean_text(node.title)
+                    title = clean_toc_title(raw_title)
+                    if href and title:
+                        self.href_to_toc_title[href] = title
+                elif isinstance(node, (list, tuple)):
+                    if node and isinstance(node[0], epub.Link):
+                        href = self._norm_href(node[0].href)
+                        raw_title = clean_text(node[0].title)
+                        title = clean_toc_title(raw_title)
+                        if href and title:
+                            self.href_to_toc_title[href] = title
+                    for child in node[1] if len(node) > 1 else []:
+                        walk(child)
+            except Exception as e:
+                LOGGER.debug("TOC node error: %s", e)
+
+        if getattr(self.__book, "toc", None):
+            for n in self.__book.toc:
+                walk(n)
+
+    def _clean_description(self, desc: str) -> str:
+        """Clean description by stripping HTML tags and normalizing text."""
+        if not desc:
+            return ""
+
+        # Parse HTML and extract text content
+        soup = BeautifulSoup(desc, "html.parser")
+        text = soup.get_text(separator=" ", strip=True)
+
+        # Apply standard text cleaning
+        return clean_text(text)
+
+    def _sanitize_dom(self, soup: BeautifulSoup):
+        """Remove scripts, styles, footnote refs, and flatten small-caps."""
+        for t in soup(["script", "style"]):
+            t.decompose()
+        for t in soup.select(
+            'a[epub|type="noteref"], a[epub\\:type="noteref"], sup.noteref, sup.footnote, a.footnote, a.noteref'
+        ):
+            t.decompose()
+        for br in soup.find_all("br"):
+            br.replace_with(" ")
+        # flatten small-caps/dropcaps
+        for sc in soup.select('.smallcaps, .smcap, .sc, .caps, [style*="small-caps"]'):
+            txt = sc.get_text("", strip=True)
+            sc.clear()
+            sc.append(txt)
+        for dc in soup.select(".dropcap, .drop-cap, .initial"):
+            txt = dc.get_text("", strip=True)
+            dc.clear()
+            dc.append(txt)
+
+    def _do_parse(self) -> None:
+        """Parse EPUB and extract chunks."""
+        if self.__book is None:
+            raise ParseError(self.source_path, "Must call load() before parse()")
+
+        spine_ids = [sid for (sid, _) in self.__book.spine if sid != "nav"]
+        id_to_item = {it.get_id(): it for it in self.__book.get_items()}
+
+        # Use tqdm if processing many documents
+        from tqdm import tqdm
+        iterator = (
+            spine_ids
+            if len(spine_ids) < 3
+            else tqdm(spine_ids, desc="Processing documents")
+        )
+
+        global_para_id = 0
+        full_text_accum: List[str] = []
+
+        for order_idx, sid in enumerate(iterator):
+            try:
+                item = id_to_item.get(sid)
+                is_doc = item and (
+                    isinstance(item, epub.EpubHtml)
+                    or (
+                        hasattr(item, "get_type")
+                        and item.get_type() == getattr(ebooklib, "ITEM_DOCUMENT", None)
+                    )
+                )
+                if not is_doc:
+                    try:
+                        _ = item.get_content()
+                    except Exception:
+                        continue
+
+                # Skip TOC files (they are used for hierarchy only, not content extraction)
+                if item:
+                    href = self._norm_href(item.get_name())
+                    if re.search(r'(toc|nav|contents)\.x?html?$', href, re.I):
+                        LOGGER.debug("Skipping TOC file: %s", href)
+                        continue
+
+                href, para_id_after, doc_text = self._process_document(
+                    item, order_idx, global_para_id
+                )
+                global_para_id = para_id_after
+                if doc_text:
+                    full_text_accum.append(doc_text)
+
+            except Exception as e:
+                LOGGER.warning("Error processing document %s: %s", sid, e)
+
+        # Compute quality
+        normalized_doc_text = clean_text("\n".join(full_text_accum))
+        self._compute_quality(normalized_doc_text)
+
+        # Update provenance with normalized hash
+        self._BaseExtractor__provenance.normalized_hash = sha1(normalized_doc_text.encode("utf-8"))
+
+        # Store raw paragraph chunks for strategy processing
+        # Apply chunking strategy (default: 'rag')
+        self._apply_chunking_strategy()
+
+        # Update chunks_dict to match strategy output for backward compatibility
+        self.chunks_dict = [
+            chunk.to_dict() if hasattr(chunk, 'to_dict') else chunk
+            for chunk in self._BaseExtractor__chunks
+        ]
+
+        LOGGER.info(
+            "✓ Extracted %d paragraphs → %d chunks (strategy: %s); route=%s (%.2f)",
+            len(self._BaseExtractor__raw_chunks),
+            len(self.chunks_dict),
+            self.config.chunking_strategy,
+            self._BaseExtractor__doc_route,
+            self._BaseExtractor__doc_quality_score,
+        )
+
+    def _reset_lower_hierarchy(self):
+        """Reset hierarchy levels >= reset_depth."""
+        for i in range(self.reset_depth, 7):
+            self.current_hierarchy[f"level_{i}"] = ""
+
+    def _set_heading_level(self, level: int, text: str):
+        """Set heading at level and clear deeper levels."""
+        level = max(1, min(6, level))
+        self.current_hierarchy[f"level_{level}"] = text
+        for deeper in range(level + 1, 7):
+            self.current_hierarchy[f"level_{deeper}"] = ""
+
+    def _process_document(
+        self, item, order_idx: int, global_para_id: int
+    ) -> Tuple[str, int, str]:
+        """Process a single spine document and extract paragraphs."""
+        href = self._norm_href(item.get_name())
+
+        try:
+            raw_html = item.get_content()
+            try:
+                # EPUB content is XHTML (XML), use lxml-xml parser
+                soup = BeautifulSoup(raw_html, "lxml-xml")
+            except Exception:
+                try:
+                    # Fallback to HTML parser if XML parsing fails
+                    LOGGER.debug("Falling back to lxml-html for %s", href)
+                    soup = BeautifulSoup(raw_html, "lxml")
+                except Exception:
+                    try:
+                        import html5lib  # noqa: F401
+
+                        LOGGER.debug("Falling back to html5lib for %s", href)
+                        soup = BeautifulSoup(raw_html, "html5lib")
+                    except Exception:
+                        LOGGER.debug("Falling back to html.parser for %s", href)
+                        soup = BeautifulSoup(raw_html, "html.parser")
+            self._sanitize_dom(soup)
+        except Exception as e:
+            LOGGER.warning("Failed to parse HTML in %s: %s", href, e)
+            return href, global_para_id, ""
+
+        if not self.preserve_hierarchy_across_docs:
+            self._reset_lower_hierarchy()
+
+        toc_title = self.href_to_toc_title.get(href, "")
+        if toc_title:
+            self.current_hierarchy[f"level_{self.toc_level}"] = toc_title
+
+        def h_snapshot():
+            return {
+                f"level_{i}": self.current_hierarchy[f"level_{i}"] for i in range(1, 7)
+            }
+
+        def flush_paragraph(text: str, source_tag: str) -> None:
+            nonlocal global_para_id
+            text = clean_text(text)
+            if not text or estimate_word_count(text) < self.min_paragraph_words:
+                return
+
+            h = h_snapshot()
+
+            # OPTIONAL: strip enumerators at start of NOTES items
+            if any(x == "NOTES" for x in h.values()):
+                text = re.sub(r"^\s*(?:\d+|[IVXLC]+)\s*[.)]?\s*", "", text)
+
+            # micro de-dup: skip if new text fully contained in previous chunk from same spine item
+            last = self.chunks_dict[-1] if self.chunks_dict else None
+            if (
+                last
+                and last["chapter_href"] == href
+                and last["source_order"] == order_idx
+            ):
+                if text and (text == last["text"] or text in last["text"]):
+                    return
+
+            # --- sentence split + footnote detection
+            sents = split_sentences(text)
+            by_sentence = []
+            footnote_all: List[int] = []
+            for idx, s in enumerate(sents):
+                nums = detect_trailing_footnotes(s)
+                if nums:
+                    by_sentence.append({"index": idx, "numbers": nums})
+                    for n in nums:
+                        if n not in footnote_all:
+                            footnote_all.append(n)
+
+            global_para_id += 1
+            chunk = {
+                "stable_id": stable_id(
+                    href, str(order_idx), str(global_para_id), text[:80]
+                ),
+                "paragraph_id": global_para_id,
+                "text": text,
+                "hierarchy": h,
+                "chapter_href": href,
+                "source_order": order_idx,
+                "source_tag": source_tag,
+                "text_length": len(text),
+                "word_count": estimate_word_count(text),
+                "cross_references": extract_cross_references(text),
+                "scripture_references": extract_scripture_references(text),
+                "dates_mentioned": extract_dates(text),
+                "heading_path": heading_path(h),
+                "hierarchy_depth": hierarchy_depth(h),
+                "doc_stable_id": self.provenance.doc_id,
+            }
+            # Attach sentences and normalized text
+            chunk["sentence_count"] = len(sents)
+            chunk["sentences"] = sents[:6]
+            chunk["normalized_text"] = normalize_ascii(chunk["text"])
+
+            # Attach footnote citations (NEW)
+            if footnote_all:
+                chunk["footnote_citations"] = {
+                    "all": footnote_all,
+                    "by_sentence": by_sentence,
+                }
+
+            # Apply tiny chunk filter if enabled
+            if not self._should_filter_tiny_chunk(chunk):
+                self._add_raw_chunk(chunk)
+
+        body = soup.find("body") or soup
+
+        # Headings set hierarchy; do NOT chunk them
+        for h in body.find_all([f"h{i}" for i in range(1, 7)]):
+            lvl = heading_level(h.name.lower())
+            htxt = clean_text(h.get_text(" "))
+            if htxt:
+                self._set_heading_level(lvl, htxt)
+
+        # Block-level chunking (route-sensitive)
+        BLOCK_TAGS = {
+            "p",
+            "blockquote",
+            "li",
+            "pre",
+            "figure",
+            "section",
+            "article",
+            "div",
+            "aside",
+            "header",
+            "footer",
+            "main",
+            # odd EPUBs: inline wrappers
+            "span",
+            "a",
+            "em",
+            "strong",
+        }
+        INLINE_TAGS = {"span", "a", "em", "strong"}
+        BLOCK_PARENTS = {"p", "li", "blockquote", "pre", "figure"}
+        texts_for_doc_hash: List[str] = []
+
+        for el in body.find_all(BLOCK_TAGS, recursive=True):
+            tag = (el.name or "").lower()
+            if is_heading_tag(tag):
+                continue
+            # prevent double-chunking: skip inline elements if they live inside a block parent
+            if tag in INLINE_TAGS and el.find_parent(tuple(BLOCK_PARENTS)):
+                continue
+
+            classes = " ".join(el.get("class", []))
+            if classes and self.class_denylist_re.search(classes):
+                continue
+
+            txt = clean_text(el.get_text(" "))
+            if not txt:
+                continue
+
+            texts_for_doc_hash.append(txt)
+
+            if self._BaseExtractor__doc_route == "C":
+                continue  # fixed windows later
+
+            if tag == "li":
+                flush_paragraph(f"• {txt}", "li")
+            elif tag in {"p", "blockquote", "pre", "figure"}:
+                flush_paragraph(txt, tag)
+            elif tag in {
+                "section",
+                "article",
+                "div",
+                "aside",
+                "header",
+                "footer",
+                "main",
+                "span",
+                "a",
+                "em",
+                "strong",
+            }:
+                # Only extract container tags if they're leaf nodes (no nested blocks)
+                # This prevents extracting wrapper divs as mega-chunks
+                has_nested_blocks = el.find(['p', 'li', 'blockquote', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'section', 'article', 'div'])
+                if not has_nested_blocks and estimate_word_count(txt) >= max(
+                    2 * self.min_paragraph_words, self.min_block_words
+                ):
+                    flush_paragraph(txt, tag)
+
+        # Fixed windows for route C
+        fixed_text = " ".join(texts_for_doc_hash)
+        if self._BaseExtractor__doc_route == "C" and fixed_text:
+            words = fixed_text.split()
+            window, overlap = 120, 20
+            i = 0
+            while i < len(words):
+                chunk_words = words[i : i + window]
+                if len(chunk_words) >= self.min_paragraph_words:
+                    flush_paragraph(" ".join(chunk_words), "fixed_window")
+                i += window - overlap
+
+        # Aggressive fallbacks
+        if not texts_for_doc_hash:
+            doc_text = clean_text(soup.get_text(" "))
+            if doc_text:
+                texts_for_doc_hash.append(doc_text)
+                words = doc_text.split()
+                window, overlap = 100, 20
+                i = 0
+                while i < len(words):
+                    chunk_words = words[i : i + window]
+                    i += window - overlap
+                    if len(chunk_words) >= self.min_paragraph_words:
+                        flush_paragraph(" ".join(chunk_words), "fallback_window")
+
+        if not any(c for c in self.chunks_dict if c.get("chapter_href") == href):
+            for el in soup.find_all(True, recursive=True):
+                if is_heading_tag((el.name or "").lower()):
+                    continue
+                txt = clean_text(el.get_text(" "))
+                if txt and estimate_word_count(txt) >= max(3, self.min_paragraph_words):
+                    flush_paragraph(txt, f"fallback:{(el.name or 'node')}")
+
+        # Optional debug dump (prefixed with file base)
+        if self.debug_dump:
+            try:
+                os.makedirs("./debug", exist_ok=True)
+                file_base = os.path.splitext(os.path.basename(self.source_path))[0]
+                raw_txt = clean_text((soup.get_text(" ") or "")[:2000])
+                with open(
+                    f"./debug/{file_base}_{order_idx:03d}_{os.path.basename(href) or 'doc'}.raw.txt",
+                    "w",
+                    encoding="utf-8",
+                ) as f:
+                    f.write(raw_txt)
+                from collections import Counter as _C
+
+                tag_counts = _C([el.name.lower() for el in soup.find_all(True)])
+                stats = {
+                    "file": os.path.basename(self.source_path),
+                    "href": href,
+                    "order_idx": order_idx,
+                    "body_present": bool(soup.find("body")),
+                    "total_text_len": len(soup.get_text(" ") or ""),
+                    "first_300_text": raw_txt[:300],
+                    "tag_counts_top10": dict(tag_counts.most_common(10)),
+                    "p_count": len(soup.find_all("p")),
+                    "div_count": len(soup.find_all("div")),
+                    "li_count": len(soup.find_all("li")),
+                    "span_count": len(soup.find_all("span")),
+                    "a_count": len(soup.find_all("a")),
+                }
+                import json
+                with open(
+                    f"./debug/{file_base}_{order_idx:03d}_{os.path.basename(href) or 'doc'}.stats.json",
+                    "w",
+                    encoding="utf-8",
+                ) as f:
+                    f.write(json.dumps(stats, ensure_ascii=False, indent=2))
+            except Exception as _e:
+                LOGGER.debug("debug dump failed for %s: %s", href, _e)
+
+        return href, global_para_id, " ".join(texts_for_doc_hash)
+
+    def _do_extract_metadata(self) -> Metadata:
+        """
+        Extract document-level metadata.
+
+        Must be called after parse().
+
+        Args:
+            analyzer: Optional analyzer instance for domain-specific enrichment.
+                     If None, no domain enrichment is performed.
+
+        Returns:
+            Metadata object with all fields populated
+        """
+        if not self.chunks_dict:
+            raise ParseError(self.source_path, "No chunks available. Call parse() first.")
+
+        # Extract base metadata from EPUB
+        base_metadata = {
+            "title": clean_text(
+                self.__book.get_metadata("DC", "title")[0][0]
+                if self.__book.get_metadata("DC", "title")
+                else ""
+            ),
+            "author": clean_text(
+                self.__book.get_metadata("DC", "creator")[0][0]
+                if self.__book.get_metadata("DC", "creator")
+                else ""
+            ),
+            "description": self._clean_description(
+                self.__book.get_metadata("DC", "description")[0][0]
+                if self.__book.get_metadata("DC", "description")
+                else ""
+            ),
+            "language": clean_text(
+                self.__book.get_metadata("DC", "language")[0][0]
+                if self.__book.get_metadata("DC", "language")
+                else ""
+            ),
+            "publisher": clean_text(
+                self.__book.get_metadata("DC", "publisher")[0][0]
+                if self.__book.get_metadata("DC", "publisher")
+                else ""
+            ),
+            "source_identifiers": {"toc_map": self.href_to_toc_title or {}},
+            "md_schema_version": MD_SCHEMA_VERSION,
+        }
+
+        # Optionally enrich with domain-specific metadata
+        if self.analyzer is not None:
+            full_text = " ".join(ch["text"] for ch in self.chunks_dict)
+            metadata_dict = self.analyzer.enrich_metadata(base_metadata, full_text, self.chunks_dict)
+        else:
+            metadata_dict = base_metadata
+
+        # Convert dict to Metadata object
+        return Metadata(
+            title=metadata_dict.get("title", ""),
+            author=metadata_dict.get("author", ""),
+            description=metadata_dict.get("description", ""),
+            document_type=metadata_dict.get("document_type", ""),
+            date_promulgated=metadata_dict.get("date_promulgated", ""),
+            subject=metadata_dict.get("subject", []),
+            key_themes=metadata_dict.get("key_themes", []),
+            related_documents=metadata_dict.get("related_documents", []),
+            time_period=metadata_dict.get("time_period", ""),
+            geographic_focus=metadata_dict.get("geographic_focus", ""),
+            language=metadata_dict.get("language", ""),
+            publisher=metadata_dict.get("publisher", ""),
+            pages=metadata_dict.get("pages", ""),
+            word_count=metadata_dict.get("word_count", ""),
+            source_identifiers=metadata_dict.get("source_identifiers", {}),
+            md_schema_version=MD_SCHEMA_VERSION,
+        )
+
+    def get_output_data(self, analyzer=None) -> Dict[str, Any]:
+        """
+        Get complete output data structure.
+
+        Overridden to maintain exact backward compatibility with original parser
+        which uses dict format for chunks with complex footnote_citations structure.
+
+        Args:
+            analyzer: Optional analyzer instance for domain-specific enrichment.
+                     If None, no domain enrichment is performed.
+
+        Returns:
+            Dictionary with keys: metadata, chunks, extraction_info
+        """
+        if not self.chunks_dict:
+            raise ParseError(self.source_path, "No chunks available. Call parse() first.")
+        if self.metadata is None:
+            raise RuntimeError("No metadata available. Call extract_metadata() first.")
+
+        # Get the raw metadata dict using CatholicAnalyzer (has footnotes_summary)
+        base_metadata = {
+            "title": clean_text(
+                self.__book.get_metadata("DC", "title")[0][0]
+                if self.__book.get_metadata("DC", "title")
+                else ""
+            ),
+            "author": clean_text(
+                self.__book.get_metadata("DC", "creator")[0][0]
+                if self.__book.get_metadata("DC", "creator")
+                else ""
+            ),
+            "description": self._clean_description(
+                self.__book.get_metadata("DC", "description")[0][0]
+                if self.__book.get_metadata("DC", "description")
+                else ""
+            ),
+            "language": clean_text(
+                self.__book.get_metadata("DC", "language")[0][0]
+                if self.__book.get_metadata("DC", "language")
+                else ""
+            ),
+            "publisher": clean_text(
+                self.__book.get_metadata("DC", "publisher")[0][0]
+                if self.__book.get_metadata("DC", "publisher")
+                else ""
+            ),
+            "source_identifiers": {"toc_map": self.href_to_toc_title or {}},
+            "md_schema_version": MD_SCHEMA_VERSION,
+        }
+
+        # Optionally enrich with domain-specific metadata
+        if self.analyzer is not None:
+            full_text = " ".join(ch["text"] for ch in self.chunks_dict)
+            raw_metadata = self.analyzer.enrich_metadata(base_metadata, full_text, self.chunks_dict)
+        else:
+            raw_metadata = base_metadata
+
+        # Add provenance and quality
+        raw_metadata["provenance"] = self.provenance.to_dict()
+        raw_metadata["quality"] = self.quality.to_dict()
+
+        # Use chunks_dict directly for backward compatibility
+        return {
+            "metadata": raw_metadata,
+            "chunks": self.chunks_dict,
+            "extraction_info": {
+                "total_paragraphs": len(self.chunks_dict),
+                "extraction_date": datetime.now().isoformat(),
+                "source_file": os.path.basename(self.source_path),
+                "parser_version": PARSER_VERSION,
+                "md_schema_version": MD_SCHEMA_VERSION,
+                "route": self.route,
+                "quality_score": round(self.quality_score, 4),
+            },
+        }

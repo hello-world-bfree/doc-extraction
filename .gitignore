@@ -1,0 +1,108 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Project-specific outputs
+debug/
+outputs/
+extractions/
+vatican_raw/
+vatican_archive/
+rag_corpus/
+recommendation_corpus/
+retrieval_corpus/
+*_corpus/
+*.jsonl
+__to_delete/
+
+# Extraction library specific
+*_metadata.json
+*_hierarchy_report.txt
+qa_results/
+filter_test_run*.log
+fidelity_testing/
+test_env.py
+
+# Generated markdown files (exclude from git unless specifically needed)
+*.md
+!README.md
+!CHANGELOG.md
+!LICENSE
+!CHUNKING_STRATEGIES.md
+!MULTI_FORMAT_CHUNKING.md
+
+# Temporary files
+/tmp/
+*.tmp
+*.bak
+
+# Documentation builds
+docs/_build/
+docs/.doctrees/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Distribution
+*.whl
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre
+.pyre/
+
+# pytype
+.pytype/
+
+# Cython
+cython_debug/

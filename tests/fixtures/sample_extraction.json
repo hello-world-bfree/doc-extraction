@@ -1,0 +1,144 @@
+{
+  "metadata": {
+    "title": "Sample Document for Token Chunking",
+    "author": "Test Author",
+    "description": "A sample extraction output for testing token-based re-chunking",
+    "document_type": "Test Document",
+    "date_promulgated": "",
+    "subject": ["Testing", "Embeddings"],
+    "key_themes": ["Token Chunking", "Overlapping Chunks"],
+    "related_documents": [],
+    "time_period": "",
+    "geographic_focus": "",
+    "language": "en",
+    "publisher": "",
+    "pages": "",
+    "word_count": "approximately 500",
+    "source_identifiers": {},
+    "md_schema_version": "2025-09-08",
+    "footnote_index_count": 0,
+    "provenance": {
+      "doc_id": "test_doc_123",
+      "source_file": "sample.epub",
+      "parser_version": "2.1.0",
+      "md_schema_version": "2025-09-08",
+      "ingestion_ts": "2026-01-04T00:00:00.000000",
+      "content_hash": "abc123def456"
+    },
+    "quality": {
+      "signals": {
+        "garble_rate": 0.0,
+        "mean_conf": 1.0,
+        "line_len_std_norm": 0.0,
+        "lang_prob": 0.99
+      },
+      "score": 0.95,
+      "route": "A"
+    }
+  },
+  "chunks": [
+    {
+      "stable_id": "chunk_001",
+      "paragraph_id": 1,
+      "text": "This is the first paragraph. It contains several sentences to test token counting. The extraction library produces word-based chunks, but we need token-based chunks for embedding model training. This paragraph should be long enough to test the chunking algorithm properly.",
+      "hierarchy": {
+        "level_1": "Chapter 1",
+        "level_2": "Introduction",
+        "level_3": "Background"
+      },
+      "word_count": 45,
+      "scripture_references": [],
+      "cross_references": [],
+      "dates_mentioned": [],
+      "sentences": [
+        "This is the first paragraph.",
+        "It contains several sentences to test token counting.",
+        "The extraction library produces word-based chunks, but we need token-based chunks for embedding model training.",
+        "This paragraph should be long enough to test the chunking algorithm properly."
+      ]
+    },
+    {
+      "stable_id": "chunk_002",
+      "paragraph_id": 2,
+      "text": "The second paragraph continues with more content. We need to ensure that overlapping chunks work correctly when spanning multiple source chunks. Token-based chunking allows us to target specific token counts that are optimal for embedding models. The embeddinggemma-300m model has a 2048 token context window, which we must respect.",
+      "hierarchy": {
+        "level_1": "Chapter 1",
+        "level_2": "Introduction",
+        "level_3": "Background"
+      },
+      "word_count": 52,
+      "scripture_references": [],
+      "cross_references": [],
+      "dates_mentioned": [],
+      "sentences": [
+        "The second paragraph continues with more content.",
+        "We need to ensure that overlapping chunks work correctly when spanning multiple source chunks.",
+        "Token-based chunking allows us to target specific token counts that are optimal for embedding models.",
+        "The embeddinggemma-300m model has a 2048 token context window, which we must respect."
+      ]
+    },
+    {
+      "stable_id": "chunk_003",
+      "paragraph_id": 3,
+      "text": "The third paragraph introduces new concepts. Different use cases require different chunk sizes. For retrieval tasks, smaller chunks of 256-400 tokens provide better precision. For recommendation tasks, larger chunks of 512-700 tokens preserve more context. The token-rechunk tool supports both modes through CLI presets.",
+      "hierarchy": {
+        "level_1": "Chapter 1",
+        "level_2": "Methods",
+        "level_3": "Chunking Strategies"
+      },
+      "word_count": 50,
+      "scripture_references": [],
+      "cross_references": ["See Chapter 2"],
+      "dates_mentioned": [],
+      "sentences": [
+        "The third paragraph introduces new concepts.",
+        "Different use cases require different chunk sizes.",
+        "For retrieval tasks, smaller chunks of 256-400 tokens provide better precision.",
+        "For recommendation tasks, larger chunks of 512-700 tokens preserve more context.",
+        "The token-rechunk tool supports both modes through CLI presets."
+      ]
+    },
+    {
+      "stable_id": "chunk_004",
+      "paragraph_id": 4,
+      "text": "Sentence-aware overlap is crucial for maintaining context. A 10-20% overlap between consecutive chunks improves retrieval recall. The algorithm respects sentence boundaries to avoid splitting sentences mid-way. This preserves semantic coherence in each chunk. Validation ensures no chunk exceeds the 2048 token limit.",
+      "hierarchy": {
+        "level_1": "Chapter 1",
+        "level_2": "Methods",
+        "level_3": "Overlap Strategy"
+      },
+      "word_count": 48,
+      "scripture_references": [],
+      "cross_references": [],
+      "dates_mentioned": [],
+      "sentences": [
+        "Sentence-aware overlap is crucial for maintaining context.",
+        "A 10-20% overlap between consecutive chunks improves retrieval recall.",
+        "The algorithm respects sentence boundaries to avoid splitting sentences mid-way.",
+        "This preserves semantic coherence in each chunk.",
+        "Validation ensures no chunk exceeds the 2048 token limit."
+      ]
+    },
+    {
+      "stable_id": "chunk_005",
+      "paragraph_id": 5,
+      "text": "The final paragraph wraps up our test document. It demonstrates how metadata is preserved during re-chunking. Each output chunk maintains hierarchy information from the source. This allows downstream systems to understand document structure. The JSONL output format is compatible with sentence-transformers training pipelines.",
+      "hierarchy": {
+        "level_1": "Chapter 1",
+        "level_2": "Conclusion",
+        "level_3": "Summary"
+      },
+      "word_count": 46,
+      "scripture_references": [],
+      "cross_references": [],
+      "dates_mentioned": [],
+      "sentences": [
+        "The final paragraph wraps up our test document.",
+        "It demonstrates how metadata is preserved during re-chunking.",
+        "Each output chunk maintains hierarchy information from the source.",
+        "This allows downstream systems to understand document structure.",
+        "The JSONL output format is compatible with sentence-transformers training pipelines."
+      ]
+    }
+  ]
+}
