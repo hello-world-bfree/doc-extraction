@@ -1,0 +1,61 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+
+    - name: Set up Python
+      run: uv python install 3.13
+
+    - name: Extract version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+    - name: Build package
+      run: |
+        uv build
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+        git log $(git describe --tags --abbrev=0 HEAD^)..HEAD --pretty=format:"- %s (%h)" >> $GITHUB_OUTPUT
+        echo "" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Release ${{ steps.get_version.outputs.VERSION }}
+        body: |
+          ## Changes in this release
+
+          ${{ steps.changelog.outputs.CHANGELOG }}
+
+          ## Installation
+
+          ```bash
+          pip install doc-extraction==${{ steps.get_version.outputs.VERSION }}
+          ```
+
+          ## Assets
+
+          - `doc_extraction-${{ steps.get_version.outputs.VERSION }}-py3-none-any.whl` - Wheel distribution
+          - `doc_extraction-${{ steps.get_version.outputs.VERSION }}.tar.gz` - Source distribution
+        files: |
+          dist/*
+        draft: false
+        prerelease: false

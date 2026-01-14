@@ -1,0 +1,60 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      test_pypi:
+        description: 'Publish to TestPyPI instead of PyPI'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+
+    - name: Set up Python
+      run: uv python install 3.13
+
+    - name: Build package
+      run: |
+        uv build
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist
+        path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event.inputs.test_pypi == 'true' && 'testpypi' || 'pypi' }}
+      url: ${{ github.event.inputs.test_pypi == 'true' && 'https://test.pypi.org/project/doc-extraction/' || 'https://pypi.org/project/doc-extraction/' }}
+    permissions:
+      id-token: write
+
+    steps:
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: dist
+        path: dist/
+
+    - name: Publish to TestPyPI
+      if: github.event.inputs.test_pypi == 'true'
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
+
+    - name: Publish to PyPI
+      if: github.event.inputs.test_pypi != 'true'
+      uses: pypa/gh-action-pypi-publish@release/v1
