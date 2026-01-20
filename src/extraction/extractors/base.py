@@ -285,7 +285,8 @@ class BaseExtractor(ABC):
         chunk_config = ChunkConfig(
             min_words=self.config.min_chunk_words,
             max_words=self.config.max_chunk_words,
-            preserve_hierarchy_levels=self.config.preserve_hierarchy_levels
+            preserve_hierarchy_levels=self.config.preserve_hierarchy_levels,
+            preserve_small_chunks=self.config.preserve_small_chunks
         )
 
         processed_chunks = strategy.apply(raw_chunks_dicts, chunk_config)
@@ -380,3 +381,34 @@ class BaseExtractor(ABC):
 
         self.__state = ExtractorState.OUTPUT_READY
         return result
+
+    def get_document_context(self) -> str:
+        """
+        Return document-level context for prepending to chunks.
+
+        This supports the "contextual chunking" pattern that reduces
+        incorrect retrieval by ~67% by prepending document metadata
+        to each chunk before embedding.
+
+        Must be called after extract_metadata().
+
+        Returns:
+            Formatted string with title, author, and subjects (if available)
+
+        Raises:
+            MethodOrderError: If metadata not yet extracted
+        """
+        self._require_state(
+            "get_document_context",
+            [ExtractorState.METADATA_READY, ExtractorState.OUTPUT_READY]
+        )
+
+        parts = []
+        if self.__metadata.title:
+            parts.append(f"Title: {self.__metadata.title}")
+        if self.__metadata.author:
+            parts.append(f"Author: {self.__metadata.author}")
+        if self.__metadata.subject:
+            subjects = self.__metadata.subject[:3]
+            parts.append(f"Subjects: {', '.join(subjects)}")
+        return "\n".join(parts)

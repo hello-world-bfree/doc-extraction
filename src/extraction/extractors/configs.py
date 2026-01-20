@@ -9,10 +9,10 @@ options. Validation happens in __post_init__ to catch errors early.
 """
 
 import re
-from dataclasses import dataclass, field
-from typing import Literal, Optional
+from dataclasses import dataclass
+from typing import Literal
 
-from ..exceptions import ConfigError, InvalidConfigValueError
+from ..exceptions import InvalidConfigValueError
 
 
 @dataclass
@@ -26,6 +26,7 @@ class BaseExtractorConfig:
         max_chunk_words: Maximum words per chunk (for RAG strategy)
         preserve_hierarchy_levels: Number of hierarchy levels to preserve
         filter_noise: Filter index pages, TOC, and copyright boilerplate
+        preserve_small_chunks: Preserve chunks below min_chunk_words with quality flags (default: True)
     """
 
     chunking_strategy: Literal["rag", "nlp", "semantic", "embeddings", "paragraph"] = "rag"
@@ -33,6 +34,7 @@ class BaseExtractorConfig:
     max_chunk_words: int = 500
     preserve_hierarchy_levels: int = 3
     filter_noise: bool = True
+    preserve_small_chunks: bool = True
 
     def __post_init__(self):
         if self.chunking_strategy not in ("rag", "nlp", "semantic", "embeddings", "paragraph"):
@@ -75,22 +77,35 @@ class EpubExtractorConfig(BaseExtractorConfig):
     Configuration for EPUB extractor.
 
     Attributes:
-        toc_hierarchy_level: TOC hierarchy level to use (1-6)
+        toc_hierarchy_level: TOC hierarchy level to use (1-6, default: 1)
+            - 1: Most books (Book Title at level 1, TOC entries at level 2)
+            - 2: Books with parts (Book Title at level 1, Part at level 2, TOC entries at level 3)
+            - 3: Document collections (Collection at level 1, Book at level 2, TOC entries at level 3)
         min_paragraph_words: Minimum words to consider text as paragraph
         min_block_words: Minimum words to consider a block valid
         preserve_hierarchy_across_docs: Whether to preserve hierarchy across spine documents
         reset_depth: Hierarchy depth at which to reset across documents
         class_denylist: Regex pattern for CSS classes to exclude
         filter_tiny_chunks: Tiny chunk filtering level ('off', 'conservative', 'standard', 'aggressive')
+        detect_visual_headings: Enable visual heading detection from inline styles
+        visual_heading_font_threshold: Font-size threshold for visual headings (em/rem multiplier)
+        detect_front_matter: Enable front/back matter detection (dedications, glossaries, indexes, etc.)
+        filter_front_matter: Hard filter detected front/back matter (requires detect_front_matter=True)
+        detect_references: Enable end-of-chapter reference/citation block detection
     """
 
-    toc_hierarchy_level: int = 3
+    toc_hierarchy_level: int = 1
     min_paragraph_words: int = 6
     min_block_words: int = 30
     preserve_hierarchy_across_docs: bool = False
     reset_depth: int = 2
     class_denylist: str = r"^(?:calibre\d+|note|footnote)$"
     filter_tiny_chunks: Literal["off", "conservative", "standard", "aggressive"] = "conservative"
+    detect_visual_headings: bool = False
+    visual_heading_font_threshold: float = 1.3
+    detect_front_matter: bool = False
+    filter_front_matter: bool = False
+    detect_references: bool = False
 
     def __post_init__(self):
         super().__post_init__()
@@ -137,6 +152,13 @@ class EpubExtractorConfig(BaseExtractorConfig):
                 "filter_tiny_chunks",
                 self.filter_tiny_chunks,
                 ["off", "conservative", "standard", "aggressive"]
+            )
+
+        if not (1.0 <= self.visual_heading_font_threshold <= 3.0):
+            raise InvalidConfigValueError(
+                "visual_heading_font_threshold",
+                self.visual_heading_font_threshold,
+                "Must be between 1.0 and 3.0"
             )
 
 

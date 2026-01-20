@@ -169,17 +169,24 @@ class TestSemanticChunkingStrategy:
             assert chunk['word_count'] <= 20
 
     def test_respects_min_words(self, sample_paragraph_chunks):
-        """Should filter out chunks below min_words."""
+        """Should preserve chunks below min_words with quality flag by default."""
         strategy = SemanticChunkingStrategy()
-        config = ChunkConfig(min_words=30, max_words=500)
+        config = ChunkConfig(min_words=30, max_words=500, preserve_small_chunks=True)
 
         # Use only Section B (13 words - below minimum)
         chunks = [c for c in sample_paragraph_chunks if c['paragraph_id'] == 4]
 
         result = strategy.apply(chunks, config)
 
-        # Should be filtered out (below 30 words)
-        assert len(result) == 0
+        # Should preserve chunk with quality flag (default behavior)
+        assert len(result) == 1
+        assert result[0]['word_count'] == 13
+        assert 'below_rag_minimum' in result[0]['quality_flags']
+
+        # Test filtering behavior when preserve_small_chunks=False
+        config_filter = ChunkConfig(min_words=30, max_words=500, preserve_small_chunks=False)
+        result_filtered = strategy.apply(chunks, config_filter)
+        assert len(result_filtered) == 0
 
     def test_skips_index_sections(self, sample_paragraph_chunks):
         """Should skip index/TOC sections."""
@@ -303,6 +310,76 @@ class TestSemanticChunkingStrategy:
         assert merged['source_paragraph_count'] == 3
         assert 'merged_paragraph_ids' in merged
         assert merged['merged_paragraph_ids'] == [1, 2, 3]
+
+    def test_preserves_full_hierarchy_from_source(self):
+        """Should preserve complete hierarchy even when grouping by fewer levels."""
+        chunks = [
+            {
+                'paragraph_id': 1,
+                'text': 'Paragraph 1 with enough words here.',
+                'word_count': 7,
+                'hierarchy': {
+                    'level_1': 'Book',
+                    'level_2': 'Chapter',
+                    'level_3': 'Section',
+                    'level_4': 'Subsection',
+                    'level_5': 'Item'
+                },
+                'chapter_href': 'ch1.html',
+                'source_order': 1,
+                'source_tag': 'p',
+                'text_length': 30,
+                'cross_references': [],
+                'scripture_references': [],
+                'dates_mentioned': [],
+                'heading_path': 'Book / Chapter / Section / Subsection / Item',
+                'hierarchy_depth': 5,
+                'doc_stable_id': 'doc123',
+                'sentence_count': 1,
+                'sentences': ['Paragraph 1 with enough words here.'],
+                'normalized_text': 'paragraph 1 with enough words here.',
+            },
+            {
+                'paragraph_id': 2,
+                'text': 'Paragraph 2 also has enough words.',
+                'word_count': 6,
+                'hierarchy': {
+                    'level_1': 'Book',
+                    'level_2': 'Chapter',
+                    'level_3': 'Section',
+                    'level_4': 'Subsection',
+                    'level_5': 'Different Item'
+                },
+                'chapter_href': 'ch1.html',
+                'source_order': 2,
+                'source_tag': 'p',
+                'text_length': 30,
+                'cross_references': [],
+                'scripture_references': [],
+                'dates_mentioned': [],
+                'heading_path': 'Book / Chapter / Section / Subsection / Different Item',
+                'hierarchy_depth': 5,
+                'doc_stable_id': 'doc123',
+                'sentence_count': 1,
+                'sentences': ['Paragraph 2 also has enough words.'],
+                'normalized_text': 'paragraph 2 also has enough words.',
+            },
+        ]
+
+        strategy = SemanticChunkingStrategy()
+        config = ChunkConfig(min_words=5, max_words=500, preserve_hierarchy_levels=3)
+
+        result = strategy.apply(chunks, config)
+
+        assert len(result) == 1
+        merged = result[0]
+
+        assert 'level_1' in merged['hierarchy']
+        assert 'level_2' in merged['hierarchy']
+        assert 'level_3' in merged['hierarchy']
+        assert 'level_4' in merged['hierarchy']
+        assert 'level_5' in merged['hierarchy']
+        assert merged['hierarchy']['level_5'] == 'Item'
 
 
 class TestStrategyRegistry:

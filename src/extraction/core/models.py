@@ -55,6 +55,8 @@ class Chunk:
     # Chunking strategy metadata (v2.3+)
     merged_paragraph_ids: Optional[List[int]] = None
     source_paragraph_count: Optional[int] = None
+    # Quality markers (v2.5+)
+    quality_flags: Optional[List[str]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dict format matching current output.

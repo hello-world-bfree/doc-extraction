@@ -1,6 +1,6 @@
 [project]
 name = "doc-extraction"
-version = "0.0.1"
+version = "2.5.0"
 description = "Multi-format document extraction library for EPUB, PDF, HTML, Markdown, and JSON documents"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -59,6 +59,13 @@ finetuning = [
     "torch>=2.1.0",
     "sentencepiece>=0.1.99",
 ]
+annotation = [
+    "textual>=0.80.0",
+    "lightgbm>=4.0.0",
+    "scikit-learn>=1.5.0",
+    "numpy>=1.26.0",
+    "pyperclip>=1.8.0",
+]
 dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
@@ -71,6 +78,10 @@ extract = "extraction.cli.extract:main"
 vatican-extract = "extraction.cli.vatican_extract:main"
 token-rechunk = "extraction.tools.token_rechunker:main"
 extract-images = "extraction.cli.scrape_images:main"
+annotate-chunks = "extraction.tools.annotate.cli:main"
+corpus-builder = "extraction.tools.corpus_builder:main"
+training-builder = "extraction.tools.training_builder:main"
+fix-hierarchy = "extraction.tools.fix_hierarchy:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -126,3 +137,20 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "@abstractmethod",
 ]
+
+[tool.extraction]
+# Default extraction settings (can be overridden per-project with extraction.toml)
+chunking_strategy = "rag"
+min_chunk_words = 100
+max_chunk_words = 500
+filter_noise = true
+filter_tiny_chunks = "conservative"
+preserve_small_chunks = true
+detect_front_matter = true
+filter_front_matter = true
+detect_references = true
+detect_visual_headings = false
+visual_heading_font_threshold = 1.3
+toc_hierarchy_level = 1
+preserve_hierarchy_across_docs = false
+analyzer = "catholic"

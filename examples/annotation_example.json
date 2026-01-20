@@ -1,0 +1,127 @@
+{
+  "metadata": {
+    "title": "Sample Document for Annotation",
+    "author": "Test Author",
+    "provenance": {
+      "source_file": "sample.epub",
+      "doc_id": "sample_001"
+    },
+    "quality": {
+      "score": 0.85,
+      "route": "A"
+    }
+  },
+  "chunks": [
+    {
+      "stable_id": "chunk_001",
+      "text": "This is a well-formed chunk with proper context. It contains meaningful content about the topic of document extraction and processing. The text is coherent and would be suitable for RAG applications.",
+      "metadata": {
+        "word_count": 31,
+        "sentence_count": 3,
+        "hierarchy": {
+          "level_1": "Chapter 1: Introduction",
+          "level_2": "Section 1.1: Overview"
+        },
+        "quality": {
+          "score": 0.92,
+          "signals": {
+            "garble_rate": 0.01,
+            "mean_conf": 0.95
+          }
+        },
+        "source_file": "sample.epub",
+        "source_order": 0
+      },
+      "scripture_references": [],
+      "cross_references": []
+    },
+    {
+      "stable_id": "chunk_002",
+      "text": "1, Part 1 109 24 8* 27 133* 356 109*, 133* 357 108 358 108 109 132",
+      "metadata": {
+        "word_count": 15,
+        "sentence_count": 1,
+        "hierarchy": {},
+        "quality": {
+          "score": 0.12,
+          "signals": {
+            "garble_rate": 0.85,
+            "mean_conf": 0.25
+          }
+        },
+        "source_file": "sample.epub",
+        "source_order": 1,
+        "noise_filter_flagged": true
+      },
+      "scripture_references": [],
+      "cross_references": []
+    },
+    {
+      "stable_id": "chunk_003",
+      "text": "The extraction process involves multiple stages. First, the document is parsed to extract raw text. Then, the text is chunked into semantic units. Finally, metadata is enriched through domain-specific analyzers.",
+      "metadata": {
+        "word_count": 34,
+        "sentence_count": 3,
+        "hierarchy": {
+          "level_1": "Chapter 1: Introduction",
+          "level_2": "Section 1.2: Process"
+        },
+        "quality": {
+          "score": 0.88,
+          "signals": {
+            "garble_rate": 0.02,
+            "mean_conf": 0.93
+          }
+        },
+        "source_file": "sample.epub",
+        "source_order": 2
+      },
+      "scripture_references": [],
+      "cross_references": []
+    },
+    {
+      "stable_id": "chunk_004",
+      "text": "Next Previous Contents Page 1",
+      "metadata": {
+        "word_count": 5,
+        "sentence_count": 1,
+        "hierarchy": {},
+        "quality": {
+          "score": 0.15,
+          "signals": {
+            "garble_rate": 0.20,
+            "mean_conf": 0.40
+          }
+        },
+        "source_file": "sample.epub",
+        "source_order": 3,
+        "noise_filter_flagged": true
+      },
+      "scripture_references": [],
+      "cross_references": []
+    },
+    {
+      "stable_id": "chunk_005",
+      "text": "Quality scoring helps identify chunks that may need manual review. Chunks with low quality scores often indicate extraction issues such as missing hierarchy, formatting problems, or noise content that slipped through filters.",
+      "metadata": {
+        "word_count": 34,
+        "sentence_count": 2,
+        "hierarchy": {
+          "level_1": "Chapter 2: Quality Control",
+          "level_2": "Section 2.1: Scoring"
+        },
+        "quality": {
+          "score": 0.87,
+          "signals": {
+            "garble_rate": 0.03,
+            "mean_conf": 0.91
+          }
+        },
+        "source_file": "sample.epub",
+        "source_order": 4
+      },
+      "scripture_references": [],
+      "cross_references": []
+    }
+  ]
+}

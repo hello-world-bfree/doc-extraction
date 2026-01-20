@@ -78,7 +78,7 @@ class TestEpubExtractorConfig:
     def test_default_values(self):
         """EpubExtractorConfig should have EPUB-specific defaults."""
         config = EpubExtractorConfig()
-        assert config.toc_hierarchy_level == 3
+        assert config.toc_hierarchy_level == 1
         assert config.min_paragraph_words == 6
         assert config.min_block_words == 30
         assert config.preserve_hierarchy_across_docs is False

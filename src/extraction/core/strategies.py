@@ -21,6 +21,7 @@ class ChunkConfig:
     min_words: int = 100
     max_words: int = 500
     preserve_hierarchy_levels: int = 3  # How many hierarchy levels to use for grouping
+    preserve_small_chunks: bool = True  # Preserve chunks below min_words with quality flags
 
 
 class ChunkingStrategy(ABC):
@@ -155,9 +156,14 @@ class SemanticChunkingStrategy(ChunkingStrategy):
             current_merged['paragraph_ids'].append(chunk.get('paragraph_id'))
             current_merged['source_chunks'].append(chunk)
 
-        # Save final merged chunk if it meets minimum
+        # Save final merged chunk
         if current_merged['word_count'] >= config.min_words:
             merged_chunks.append(self._finalize_merged_chunk(current_merged))
+        elif current_merged['texts'] and config.preserve_small_chunks:
+            # Preserve chunks below minimum with quality flag
+            finalized = self._finalize_merged_chunk(current_merged)
+            finalized['quality_flags'] = ['below_rag_minimum']
+            merged_chunks.append(finalized)
 
         return merged_chunks
 
@@ -204,11 +210,14 @@ class SemanticChunkingStrategy(ChunkingStrategy):
         from .chunking import heading_path, hierarchy_depth
         from .identifiers import stable_id
 
+        # Use full hierarchy from first source chunk (preserve all levels, not just grouping key)
+        full_hierarchy = first_chunk.get('hierarchy', {})
+
         merged_chunk = {
             'stable_id': stable_id(combined_text),
             'paragraph_id': merged['paragraph_ids'][0],  # Use first para ID
             'text': combined_text,
-            'hierarchy': merged['hierarchy'],
+            'hierarchy': full_hierarchy,
             'chapter_href': first_chunk.get('chapter_href', ''),
             'source_order': first_chunk.get('source_order', 0),
             'source_tag': f"merged_{len(source_chunks)}_paragraphs",
@@ -217,8 +226,8 @@ class SemanticChunkingStrategy(ChunkingStrategy):
             'cross_references': list(set(all_cross_refs)),  # Deduplicate
             'scripture_references': list(set(all_scripture_refs)),
             'dates_mentioned': list(set(all_dates)),
-            'heading_path': heading_path(merged['hierarchy']),
-            'hierarchy_depth': hierarchy_depth(merged['hierarchy']),
+            'heading_path': heading_path(full_hierarchy),
+            'hierarchy_depth': hierarchy_depth(full_hierarchy),
             'doc_stable_id': first_chunk.get('doc_stable_id', ''),
             'sentence_count': len(all_sentences),
             'sentences': all_sentences,

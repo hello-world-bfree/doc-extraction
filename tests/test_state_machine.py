@@ -227,3 +227,36 @@ class TestStateProperty:
 
         extractor.extract_metadata()
         assert extractor.state == ExtractorState.METADATA_READY
+
+
+class TestDocumentContext:
+    """Tests for get_document_context() method."""
+
+    def test_get_document_context_before_metadata_raises_error(self):
+        """get_document_context() before extract_metadata() should raise MethodOrderError."""
+        extractor = MockExtractor("test.txt")
+        extractor.load()
+        extractor.parse()
+        with pytest.raises(MethodOrderError, match="get_document_context"):
+            extractor.get_document_context()
+
+    def test_get_document_context_after_metadata_succeeds(self):
+        """get_document_context() after extract_metadata() should return context string."""
+        extractor = MockExtractor("test.txt")
+        extractor.load()
+        extractor.parse()
+        extractor.extract_metadata()
+        context = extractor.get_document_context()
+        assert isinstance(context, str)
+        assert "Title: Test" in context
+        assert "Author: Author" in context
+
+    def test_get_document_context_after_output_succeeds(self):
+        """get_document_context() after get_output_data() should still work."""
+        extractor = MockExtractor("test.txt")
+        extractor.load()
+        extractor.parse()
+        extractor.extract_metadata()
+        extractor.get_output_data()
+        context = extractor.get_document_context()
+        assert "Title: Test" in context

@@ -106,3 +106,4 @@ dmypy.json
 
 # Cython
 cython_debug/
+.annotation_sessions/

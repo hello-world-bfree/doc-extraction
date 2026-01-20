@@ -16,7 +16,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 from ..extractors.epub import EpubExtractor
 from ..extractors.pdf import PdfExtractor
@@ -32,6 +32,7 @@ from ..extractors.configs import (
 )
 from ..analyzers.generic import GenericAnalyzer
 from ..core.output import write_outputs
+from ..core.config import load_config, show_config_sources, generate_sample_config
 
 
 # ====================== Logging ======================
@@ -104,6 +105,12 @@ def build_config_for_format(fmt: str, config_dict: dict):
             class_denylist=config_dict.get('class_denylist', r"^(?:calibre\d+|note|footnote)$"),
             filter_tiny_chunks=config_dict.get('filter_tiny_chunks', 'conservative'),
             filter_noise=config_dict.get('filter_noise', True),
+            preserve_small_chunks=config_dict.get('preserve_small_chunks', True),
+            detect_visual_headings=config_dict.get('detect_visual_headings', False),
+            visual_heading_font_threshold=config_dict.get('visual_heading_font_threshold', 1.3),
+            detect_front_matter=config_dict.get('detect_front_matter', False),
+            filter_front_matter=config_dict.get('filter_front_matter', False),
+            detect_references=config_dict.get('detect_references', False),
             chunking_strategy=config_dict.get('chunking_strategy', 'rag'),
             min_chunk_words=config_dict.get('min_chunk_words', 100),
             max_chunk_words=config_dict.get('max_chunk_words', 500),
@@ -114,6 +121,7 @@ def build_config_for_format(fmt: str, config_dict: dict):
             heading_font_threshold=config_dict.get('heading_font_threshold', 1.2),
             use_ocr=config_dict.get('use_ocr', False),
             filter_noise=config_dict.get('filter_noise', True),
+            preserve_small_chunks=config_dict.get('preserve_small_chunks', True),
             chunking_strategy=config_dict.get('chunking_strategy', 'rag'),
             min_chunk_words=config_dict.get('min_chunk_words', 100),
             max_chunk_words=config_dict.get('max_chunk_words', 500),
@@ -123,6 +131,7 @@ def build_config_for_format(fmt: str, config_dict: dict):
             min_paragraph_words=config_dict.get('min_paragraph_words', 1),
             preserve_links=config_dict.get('preserve_links', True),
             filter_noise=config_dict.get('filter_noise', True),
+            preserve_small_chunks=config_dict.get('preserve_small_chunks', True),
             chunking_strategy=config_dict.get('chunking_strategy', 'rag'),
             min_chunk_words=config_dict.get('min_chunk_words', 100),
             max_chunk_words=config_dict.get('max_chunk_words', 500),
@@ -133,6 +142,7 @@ def build_config_for_format(fmt: str, config_dict: dict):
             preserve_code_blocks=config_dict.get('preserve_code_blocks', True),
             extract_frontmatter=config_dict.get('extract_frontmatter', True),
             filter_noise=config_dict.get('filter_noise', True),
+            preserve_small_chunks=config_dict.get('preserve_small_chunks', True),
             chunking_strategy=config_dict.get('chunking_strategy', 'rag'),
             min_chunk_words=config_dict.get('min_chunk_words', 100),
             max_chunk_words=config_dict.get('max_chunk_words', 500),
@@ -142,6 +152,7 @@ def build_config_for_format(fmt: str, config_dict: dict):
             mode=config_dict.get('import_mode', 'import'),
             import_chunks=config_dict.get('import_chunks', True),
             import_metadata=config_dict.get('import_metadata', True),
+            preserve_small_chunks=config_dict.get('preserve_small_chunks', True),
             chunking_strategy=config_dict.get('chunking_strategy', 'rag'),
             min_chunk_words=config_dict.get('min_chunk_words', 100),
             max_chunk_words=config_dict.get('max_chunk_words', 500),
@@ -310,13 +321,32 @@ def process_batch(
 
 def main():
     """Main CLI entry point."""
+    # Load config file defaults
+    cfg = load_config()
+
     ap = argparse.ArgumentParser(
         description="Extract structured data from documents (EPUB, PDF, HTML, Markdown, JSON).",
         epilog="Examples:\n"
                "  extract document.epub\n"
                "  extract documents/ -r --output-dir outputs/\n"
-               "  extract file.epub --analyzer catholic --ndjson\n",
+               "  extract file.epub --analyzer catholic --ndjson\n"
+               "\n"
+               "Configuration:\n"
+               "  extract --show-config     Show active configuration sources\n"
+               "  extract --init-config     Generate sample extraction.toml\n",
         formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    # Config management
+    ap.add_argument(
+        "--show-config",
+        action="store_true",
+        help="Show active configuration sources and exit",
+    )
+    ap.add_argument(
+        "--init-config",
+        action="store_true",
+        help="Generate sample extraction.toml in current directory and exit",
     )
 
     # Input
@@ -355,17 +385,17 @@ def main():
     # Domain analyzer
     ap.add_argument(
         "--analyzer",
-        default="generic",
+        default=cfg.get("analyzer", "generic"),
         choices=["catholic", "generic"],
-        help="Domain-specific analyzer (default: generic)",
+        help=f"Domain-specific analyzer (default: {cfg.get('analyzer', 'generic')})",
     )
 
     # Extraction options (EPUB-specific, maintained for compatibility)
     ap.add_argument(
         "--toc-level",
         type=int,
-        default=3,
-        help="Hierarchy level for TOC titles (1-6) [EPUB]",
+        default=cfg.get("toc_hierarchy_level", 1),
+        help=f"Hierarchy level for TOC titles (1-6) [EPUB] (default: {cfg.get('toc_hierarchy_level', 1)})",
     )
     ap.add_argument(
         "--min-words",
@@ -398,33 +428,75 @@ def main():
     ap.add_argument(
         "--filter-tiny-chunks",
         choices=["off", "conservative", "standard", "aggressive"],
-        default="conservative",
-        help="Filter tiny chunks (<5 words) - conservative (default: index/TOC/punctuation, -47%% noise), standard (+bullets/refs), aggressive (+appendixes), off (disable) [EPUB]",
+        default=cfg.get("filter_tiny_chunks", "conservative"),
+        help=f"Filter tiny chunks (<5 words) - conservative (index/TOC/punctuation), standard (+bullets/refs), aggressive (+appendixes), off (disable) [EPUB] (default: {cfg.get('filter_tiny_chunks', 'conservative')})",
     )
     ap.add_argument(
         "--no-filter-noise",
         action="store_true",
-        help="Disable noise filtering (index pages, reference lists, boilerplate). By default, semantic noise is filtered across all formats.",
+        default=not cfg.get("filter_noise", True),
+        help="Disable noise filtering (index pages, reference lists, boilerplate).",
+    )
+    ap.add_argument(
+        "--filter-small-chunks",
+        action="store_true",
+        default=not cfg.get("preserve_small_chunks", True),
+        help="Filter out chunks below min_chunk_words instead of preserving them with quality flags.",
+    )
+
+    # Visual hierarchy detection (EPUB)
+    ap.add_argument(
+        "--detect-visual-headings",
+        action="store_true",
+        default=cfg.get("detect_visual_headings", False),
+        help=f"Detect headings from inline font-size styles (EPUB only) (default: {cfg.get('detect_visual_headings', False)})",
+    )
+    ap.add_argument(
+        "--visual-heading-threshold",
+        type=float,
+        default=cfg.get("visual_heading_font_threshold", 1.3),
+        metavar="RATIO",
+        help=f"Font-size threshold for visual headings (default: {cfg.get('visual_heading_font_threshold', 1.3)}). EPUB only.",
+    )
+
+    # Front/back matter detection (EPUB)
+    ap.add_argument(
+        "--detect-front-matter",
+        action="store_true",
+        default=cfg.get("detect_front_matter", False),
+        help=f"Detect and flag common front/back matter sections (dedications, glossaries, indexes, etc.). EPUB only (default: {cfg.get('detect_front_matter', False)})",
+    )
+    ap.add_argument(
+        "--filter-front-matter",
+        action="store_true",
+        default=cfg.get("filter_front_matter", False),
+        help=f"Hard filter detected front/back matter (requires --detect-front-matter) (default: {cfg.get('filter_front_matter', False)})",
+    )
+    ap.add_argument(
+        "--detect-references",
+        action="store_true",
+        default=cfg.get("detect_references", False),
+        help=f"Detect and flag end-of-chapter reference/citation blocks. EPUB only (default: {cfg.get('detect_references', False)})",
     )
 
     # Chunking strategy
     ap.add_argument(
         "--chunking-strategy",
         choices=["rag", "semantic", "embeddings", "nlp", "paragraph"],
-        default="rag",
-        help="Chunking strategy: 'rag' (default, 100-500 words for embeddings), 'nlp' (paragraph-level for fine-grained analysis). Aliases: semantic=rag, embeddings=rag, paragraph=nlp",
+        default=cfg.get("chunking_strategy", "rag"),
+        help=f"Chunking strategy: 'rag' (100-500 words for embeddings), 'nlp' (paragraph-level for fine-grained analysis). Aliases: semantic=rag, embeddings=rag, paragraph=nlp (default: {cfg.get('chunking_strategy', 'rag')})",
     )
     ap.add_argument(
         "--min-chunk-words",
         type=int,
-        default=100,
-        help="Minimum words per chunk for semantic/RAG strategy (default: 100)",
+        default=cfg.get("min_chunk_words", 100),
+        help=f"Minimum words per chunk for semantic/RAG strategy (default: {cfg.get('min_chunk_words', 100)})",
     )
     ap.add_argument(
         "--max-chunk-words",
         type=int,
-        default=500,
-        help="Maximum words per chunk for semantic/RAG strategy (default: 500)",
+        default=cfg.get("max_chunk_words", 500),
+        help=f"Maximum words per chunk for semantic/RAG strategy (default: {cfg.get('max_chunk_words', 500)})",
     )
 
     # Logging
@@ -449,6 +521,23 @@ def main():
     args = ap.parse_args()
     setup_logging(verbose=args.verbose, quiet=args.quiet)
 
+    # Handle config commands
+    if args.show_config:
+        print(show_config_sources())
+        print("\nActive configuration:")
+        for key, value in sorted(cfg.items()):
+            print(f"  {key}: {value}")
+        return 0
+
+    if args.init_config:
+        config_path = Path("extraction.toml")
+        if config_path.exists():
+            print(f"Config file already exists: {config_path}")
+            return 1
+        config_path.write_text(generate_sample_config())
+        print(f"Created {config_path}")
+        return 0
+
     # Get input path
     in_path = (
         args.path.strip()
@@ -470,7 +559,13 @@ def main():
         "reset_depth": args.reset_depth,
         "class_denylist": args.deny_class,
         "filter_tiny_chunks": args.filter_tiny_chunks,
-        "filter_noise": not args.no_filter_noise,  # Enabled by default
+        "filter_noise": not args.no_filter_noise,
+        "preserve_small_chunks": not args.filter_small_chunks,
+        "detect_visual_headings": args.detect_visual_headings,
+        "visual_heading_font_threshold": args.visual_heading_threshold,
+        "detect_front_matter": args.detect_front_matter,
+        "filter_front_matter": args.filter_front_matter,
+        "detect_references": args.detect_references,
         # Chunking strategy
         "chunking_strategy": args.chunking_strategy,
         "min_chunk_words": args.min_chunk_words,

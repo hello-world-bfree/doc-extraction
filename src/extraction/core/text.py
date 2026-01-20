@@ -42,9 +42,13 @@ def clean_text(s: str) -> str:
     # Remove soft hyphen and zero-width spaces
     s = s.replace(SOFT_HYPHEN, "")
     s = re.sub(ZW_SPACES, "", s)
+    # Strip any remaining HTML tags (e.g., <i>, <em>, <b>, <strong>)
+    s = re.sub(r'<[^>]+>', '', s)
     # Collapse whitespace
     s = re.sub(r"\s+", " ", s)
     s = s.replace("\u00a0", " ").strip()
+    # Fix verse numbers without space (e.g., "29On" -> "29 On")
+    s = re.sub(r'(\b\d+)([A-Z][a-z])', r'\1 \2', s)
     # Tighten punctuation spacing
     s = re.sub(r'(\b\d+)\s+\.', r'\1.', s)
     s = re.sub(r'\s+([,;:!?])', r'\1', s)

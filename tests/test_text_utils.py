@@ -3,7 +3,7 @@
 import sys
 sys.path.insert(0, 'src')
 
-from extraction.core.text import clean_toc_title
+from extraction.core.text import clean_toc_title, clean_text
 
 
 def test_clean_toc_title_preserves_words_starting_with_roman_chars():
@@ -52,7 +52,7 @@ def test_clean_toc_title_edge_cases():
     """Test edge cases and complex scenarios."""
     # Empty/None
     assert clean_toc_title("") == ""
-    assert clean_toc_title(None) == None
+    assert clean_toc_title(None) is None
 
     # Already clean
     assert clean_toc_title("Preface") == "Preface"
@@ -76,6 +76,25 @@ def test_clean_toc_title_real_world_examples():
     assert clean_toc_title("2.3 Manipulation of Sums") == "Manipulation of Sums"
 
 
+def test_clean_text_verse_numbers():
+    """Test that verse numbers get a space inserted after them."""
+    # Verse numbers without space (from Gospel of Mark)
+    assert clean_text("29On leaving the synagogue") == "29 On leaving the synagogue"
+    assert clean_text("30Simon's mother-in-law") == "30 Simon's mother-in-law"
+    assert clean_text("31He approached, grasped her hand") == "31 He approached, grasped her hand"
+    assert clean_text("32When it was evening") == "32 When it was evening"
+    assert clean_text("33The whole town") == "33 The whole town"
+    assert clean_text("34He cured many") == "34 He cured many"
+
+    # Already has proper spacing
+    assert clean_text("29 On leaving") == "29 On leaving"
+    assert clean_text("1:29 After the synagogue") == "1:29 After the synagogue"
+
+    # Should not affect normal text
+    assert clean_text("Normal text without verse numbers") == "Normal text without verse numbers"
+    assert clean_text("The 29th of March") == "The 29th of March"
+
+
 if __name__ == "__main__":
     # Run all tests
     import traceback
@@ -87,6 +106,7 @@ if __name__ == "__main__":
         test_clean_toc_title_removes_roman_numeral_prefixes,
         test_clean_toc_title_edge_cases,
         test_clean_toc_title_real_world_examples,
+        test_clean_text_verse_numbers,
     ]
 
     passed = 0
@@ -97,11 +117,11 @@ if __name__ == "__main__":
             test_func()
             print(f"✓ {test_func.__name__}")
             passed += 1
-        except AssertionError as e:
+        except AssertionError:
             print(f"✗ {test_func.__name__}")
             traceback.print_exc()
             failed += 1
-        except Exception as e:
+        except Exception:
             print(f"✗ {test_func.__name__} (error)")
             traceback.print_exc()
             failed += 1

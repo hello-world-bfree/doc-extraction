@@ -21,9 +21,8 @@ from ebooklib import epub
 
 from .base import BaseExtractor
 from .configs import EpubExtractorConfig
-from ..analyzers.catholic import CatholicAnalyzer
 from ..analyzers.base import BaseAnalyzer
-from ..exceptions import FileNotFoundError as FileNotFoundError_, ParseError, DependencyError
+from ..exceptions import ParseError
 from ..core.chunking import (
     heading_level,
     heading_path,
@@ -37,15 +36,13 @@ from ..core.extraction import (
     extract_scripture_references,
 )
 from ..core.identifiers import sha1, stable_id
-from ..core.models import Chunk, Metadata
-from ..core.quality import quality_signals_from_text, route_doc, score_quality
+from ..core.models import Metadata
 from ..core.text import (
     MONTHS,
     clean_text,
     clean_toc_title,
     estimate_word_count,
     normalize_ascii,
-    normalize_spaced_caps,
 )
 
 # ====================== Constants ======================
@@ -376,7 +373,10 @@ class EpubExtractor(BaseExtractor):
         Args:
             epub_path: Path to .epub file
             config: Optional configuration dict with keys:
-                - toc_hierarchy_level: int (default 3)
+                - toc_hierarchy_level: int (default 1) - Where TOC entries appear in hierarchy
+                    1 = Most books (Book Title → TOC chapters)
+                    2 = Books with parts (Book Title → Part → Chapters)
+                    3 = Document collections (Collection → Book → Chapters)
                 - min_paragraph_words: int (default 6)
                 - min_block_words: int (default 30)
                 - preserve_hierarchy_across_docs: bool (default False)
@@ -435,15 +435,27 @@ class EpubExtractor(BaseExtractor):
             raise ParseError(self.source_path, "EPUB has no spine (reading order)")
 
         self._build_toc_mapping()
-        LOGGER.info("✓ EPUB loaded. TOC entries: %d", len(self.href_to_toc_title))
+        toc_count = len(self.href_to_toc_title) + len(getattr(self, 'anchor_to_toc_title', {}))
+        LOGGER.info("✓ EPUB loaded. TOC entries: %d", toc_count)
 
         # Create provenance
         src_bytes = open(self.source_path, "rb").read()
         self._set_provenance(PARSER_VERSION, MD_SCHEMA_VERSION, src_bytes)
 
-    def _norm_href(self, href: Optional[str]) -> str:
-        """Normalize href by removing fragment and leading ./"""
-        return (href or "").split("#")[0].lstrip("./")
+    def _norm_href(self, href: Optional[str], keep_fragment: bool = False) -> str:
+        """
+        Normalize href by removing leading ./ and optionally the fragment.
+
+        Args:
+            href: The href to normalize
+            keep_fragment: If True, preserve the fragment identifier (for single-file EPUBs)
+        """
+        if not href:
+            return ""
+        href = href.lstrip("./")
+        if not keep_fragment:
+            href = href.split("#")[0]
+        return href
 
     def _should_filter_tiny_chunk(self, chunk_dict: Dict[str, Any]) -> bool:
         """
@@ -525,22 +537,40 @@ class EpubExtractor(BaseExtractor):
         return False
 
     def _build_toc_mapping(self):
-        """Build mapping from href to TOC title."""
+        """
+        Build mapping from href to TOC title.
+
+        For single-file EPUBs with anchor-based navigation, also builds
+        an anchor_to_toc_title mapping for hierarchy updates during parsing.
+        """
+        self.anchor_to_toc_title: Dict[str, str] = {}
+
         def walk(node):
             try:
                 if isinstance(node, epub.Link):
-                    href = self._norm_href(node.href)
+                    full_href = self._norm_href(node.href, keep_fragment=True)
+                    base_href = self._norm_href(node.href, keep_fragment=False)
                     raw_title = clean_text(node.title)
                     title = clean_toc_title(raw_title)
-                    if href and title:
-                        self.href_to_toc_title[href] = title
+                    if base_href and title:
+                        self.href_to_toc_title[base_href] = title
+                    # Also store anchor mapping for single-file EPUBs
+                    if "#" in full_href and title:
+                        anchor = full_href.split("#", 1)[1]
+                        if anchor:
+                            self.anchor_to_toc_title[anchor] = title
                 elif isinstance(node, (list, tuple)):
                     if node and isinstance(node[0], epub.Link):
-                        href = self._norm_href(node[0].href)
+                        full_href = self._norm_href(node[0].href, keep_fragment=True)
+                        base_href = self._norm_href(node[0].href, keep_fragment=False)
                         raw_title = clean_text(node[0].title)
                         title = clean_toc_title(raw_title)
-                        if href and title:
-                            self.href_to_toc_title[href] = title
+                        if base_href and title:
+                            self.href_to_toc_title[base_href] = title
+                        if "#" in full_href and title:
+                            anchor = full_href.split("#", 1)[1]
+                            if anchor:
+                                self.anchor_to_toc_title[anchor] = title
                     for child in node[1] if len(node) > 1 else []:
                         walk(child)
             except Exception as e:
@@ -549,6 +579,10 @@ class EpubExtractor(BaseExtractor):
         if getattr(self.__book, "toc", None):
             for n in self.__book.toc:
                 walk(n)
+
+        # Log anchor count for debugging single-file EPUBs
+        if self.anchor_to_toc_title:
+            LOGGER.debug("Built anchor TOC mapping with %d entries", len(self.anchor_to_toc_title))
 
     def _clean_description(self, desc: str) -> str:
         """Clean description by stripping HTML tags and normalizing text."""
@@ -561,6 +595,99 @@ class EpubExtractor(BaseExtractor):
 
         # Apply standard text cleaning
         return clean_text(text)
+
+    def _deduplicate_paragraphs(self) -> None:
+        """
+        Remove duplicate paragraphs with identical text and hierarchy.
+
+        Fixes bug where TOC entries can cause the same paragraph to be extracted
+        multiple times as separate chunks.
+
+        Note: Normalizes whitespace before comparison to catch near-duplicates
+        that differ only in spacing (e.g., "\\n\\n" vs " ").
+        """
+        if not self._BaseExtractor__raw_chunks:
+            return
+
+        def normalize_whitespace(text: str) -> str:
+            """Normalize whitespace for deduplication comparison."""
+            import re
+            # Replace multiple whitespace (including newlines) with single space
+            normalized = re.sub(r'\s+', ' ', text)
+            return normalized.strip()
+
+        def normalize_for_substring_check(text: str) -> str:
+            """More aggressive normalization for substring detection."""
+            import re
+            # Remove punctuation and normalize whitespace
+            text = re.sub(r'[^\w\s]', '', text.lower())
+            text = re.sub(r'\s+', ' ', text)
+            return text.strip()
+
+        # Group chunks by normalized text to find potential duplicates
+        text_groups = {}
+        for chunk in self._BaseExtractor__raw_chunks:
+            chunk_dict = chunk.to_dict() if hasattr(chunk, 'to_dict') else chunk
+            text = chunk_dict.get('text', '')
+            normalized_text = normalize_whitespace(text)
+
+            if normalized_text not in text_groups:
+                text_groups[normalized_text] = []
+            text_groups[normalized_text].append(chunk)
+
+        # For each group with duplicates, keep only unique text+hierarchy combinations
+        deduplicated = []
+        total_removed = 0
+
+        for text, chunks in text_groups.items():
+            if len(chunks) == 1:
+                deduplicated.append(chunks[0])
+                continue
+
+            # Multiple chunks with same normalized text - log them all first
+            if len(chunks) > 2:  # Only log if significantly duplicated
+                LOGGER.debug(f"Found {len(chunks)} chunks with same normalized text (preview: {normalized_text[:40]}...)")
+                for i, chunk in enumerate(chunks):
+                    chunk_dict = chunk.to_dict() if hasattr(chunk, 'to_dict') else chunk
+                    para_id = chunk_dict.get('paragraph_id', 'N/A')
+                    hierarchy = chunk_dict.get('hierarchy', {})
+                    original_text = chunk_dict.get('text', '')
+                    # Show if whitespace differs
+                    if original_text != normalized_text:
+                        ws_diff = repr(original_text[:60])
+                        LOGGER.debug(f"  [{i}] para_id={para_id}, hierarchy={hierarchy}, whitespace_diff={ws_diff}")
+                    else:
+                        LOGGER.debug(f"  [{i}] para_id={para_id}, hierarchy={hierarchy}")
+
+            # Sort by paragraph_id to maintain document order and keep first occurrence
+            chunks_sorted = sorted(
+                chunks,
+                key=lambda c: (c.to_dict() if hasattr(c, 'to_dict') else c).get('paragraph_id', 999999)
+            )
+
+            # Deduplicate by hierarchy, keeping first occurrence
+            seen_hierarchies = set()
+            for chunk in chunks_sorted:
+                chunk_dict = chunk.to_dict() if hasattr(chunk, 'to_dict') else chunk
+                hierarchy = chunk_dict.get('hierarchy', {})
+                hier_tuple = tuple(sorted(hierarchy.items()))
+
+                if hier_tuple not in seen_hierarchies:
+                    seen_hierarchies.add(hier_tuple)
+                    deduplicated.append(chunk)
+                else:
+                    total_removed += 1
+                    para_id = chunk_dict.get('paragraph_id', 'N/A')
+                    text_preview = text[:50] + '...' if len(text) > 50 else text
+                    LOGGER.debug(
+                        f"  Removed duplicate para_id={para_id}: {text_preview} "
+                        f"(hierarchy={dict(hierarchy)})"
+                    )
+
+        if total_removed > 0:
+            LOGGER.debug(f"Removed {total_removed} duplicate paragraphs")
+
+        self._BaseExtractor__raw_chunks = deduplicated
 
     def _sanitize_dom(self, soup: BeautifulSoup):
         """Remove scripts, styles, footnote refs, and flatten small-caps."""
@@ -577,10 +704,32 @@ class EpubExtractor(BaseExtractor):
             txt = sc.get_text("", strip=True)
             sc.clear()
             sc.append(txt)
-        for dc in soup.select(".dropcap, .drop-cap, .initial"):
+
+        # Fix dropcaps by unwrapping and merging with following text
+        from bs4 import NavigableString
+        for dc in soup.select(".dropcap, .dropcaps, .drop-cap, .initial"):
+            # Get the drop cap letter (stripping whitespace from nested elements)
             txt = dc.get_text("", strip=True)
-            dc.clear()
-            dc.append(txt)
+
+            # Find the next text node (might be a sibling or in a following element)
+            next_node = dc.next_sibling
+
+            # Skip whitespace-only text nodes
+            while isinstance(next_node, NavigableString) and not next_node.strip():
+                next_node = next_node.next_sibling
+
+            # If next sibling is text, merge dropcap letter with it
+            if isinstance(next_node, NavigableString):
+                # Strip all leading whitespace from next text
+                next_text = str(next_node).lstrip()
+                # Concatenate drop cap letter directly with following text
+                merged = txt + next_text
+                dc.replace_with(merged)
+                next_node.extract()
+            else:
+                # Just replace with the letter and a space
+                # The next element's text will follow naturally
+                dc.replace_with(txt + " ")
 
     def _do_parse(self) -> None:
         """Parse EPUB and extract chunks."""
@@ -641,6 +790,9 @@ class EpubExtractor(BaseExtractor):
         # Update provenance with normalized hash
         self._BaseExtractor__provenance.normalized_hash = sha1(normalized_doc_text.encode("utf-8"))
 
+        # Deduplicate consecutive identical paragraphs (fixes TOC-related duplication bug)
+        self._deduplicate_paragraphs()
+
         # Store raw paragraph chunks for strategy processing
         # Apply chunking strategy (default: 'rag')
         self._apply_chunking_strategy()
@@ -671,6 +823,145 @@ class EpubExtractor(BaseExtractor):
         self.current_hierarchy[f"level_{level}"] = text
         for deeper in range(level + 1, 7):
             self.current_hierarchy[f"level_{deeper}"] = ""
+
+    def _parse_inline_font_size(self, style_attr: str) -> Optional[Tuple[float, str]]:
+        """
+        Extract font-size from inline style attribute.
+
+        Returns:
+            (value, unit) tuple or None if not found
+
+        Supports: em, rem, %, pt, px
+        """
+        if not style_attr:
+            return None
+
+        match = re.search(
+            r'font-size\s*:\s*([0-9.]+)(em|rem|%|pt|px)',
+            style_attr,
+            re.IGNORECASE
+        )
+
+        if not match:
+            return None
+
+        value_str, unit = match.groups()
+        try:
+            value = float(value_str)
+            return (value, unit.lower())
+        except ValueError:
+            return None
+
+    def _is_large_font_size(self, style_attr: str) -> bool:
+        """
+        Check if inline font-size exceeds threshold.
+
+        Threshold comparison:
+        - em/rem: >= threshold (e.g., 1.3)
+        - %: >= threshold * 100 (e.g., 130%)
+        - pt: >= 16pt (≈1.3em at 12pt base)
+        - px: >= 20px (≈1.3em at 16px base)
+        """
+        result = self._parse_inline_font_size(style_attr)
+        if not result:
+            return False
+
+        value, unit = result
+        threshold = self.config.visual_heading_font_threshold
+
+        if unit in ('em', 'rem'):
+            return value >= threshold
+        elif unit == '%':
+            return value >= (threshold * 100)
+        elif unit == 'pt':
+            return value >= 16
+        elif unit == 'px':
+            return value >= 20
+
+        return False
+
+    def _is_heading_like_text(self, text: str, word_count: int) -> bool:
+        """
+        Check if text matches heading patterns (from PDF extractor logic).
+
+        Criteria:
+        - Word count <= 15 (short text)
+        - All uppercase OR >70% capitalized words
+        """
+        if word_count > 15 or word_count == 0:
+            return False
+
+        if text.isupper():
+            return True
+
+        words = text.split()
+        if words:
+            capitalized_count = sum(1 for w in words if w and w[0].isupper())
+            if capitalized_count / len(words) > 0.7:
+                return True
+
+        return False
+
+    def _is_visual_heading(self, element) -> bool:
+        """
+        Detect if element is a visual heading (non-semantic).
+
+        Requires at least 2 signals from:
+        1. Large font-size in inline style
+        2. <strong> or <b> emphasis
+        3. Heading-like text pattern
+        """
+        text = clean_text(element.get_text())
+        word_count = estimate_word_count(text)
+
+        if word_count > 15 or word_count == 0:
+            return False
+
+        style = element.get('style', '')
+        has_large_font = self._is_large_font_size(style)
+
+        has_emphasis = bool(element.find(['strong', 'b']))
+
+        is_heading_text = self._is_heading_like_text(text, word_count)
+
+        signal_count = sum([has_large_font, has_emphasis, is_heading_text])
+        return signal_count >= 2
+
+    def _infer_heading_level_from_font_size(self, element) -> int:
+        """
+        Map font-size to heading level (1-6).
+
+        Mapping:
+        - ≥2.0em → level 1
+        - 1.5-2.0em → level 2
+        - 1.3-1.5em → level 3
+        - Default → level 2
+        """
+        style = element.get('style', '')
+        result = self._parse_inline_font_size(style)
+
+        if not result:
+            return 2
+
+        value, unit = result
+
+        if unit == '%':
+            em_value = value / 100.0
+        elif unit == 'pt':
+            em_value = value / 12.0
+        elif unit == 'px':
+            em_value = value / 16.0
+        else:
+            em_value = value
+
+        if em_value >= 2.0:
+            return 1
+        elif em_value >= 1.5:
+            return 2
+        elif em_value >= 1.3:
+            return 3
+        else:
+            return 2
 
     def _process_document(
         self, item, order_idx: int, global_para_id: int
@@ -708,6 +999,28 @@ class EpubExtractor(BaseExtractor):
         toc_title = self.href_to_toc_title.get(href, "")
         if toc_title:
             self.current_hierarchy[f"level_{self.toc_level}"] = toc_title
+
+        # For single-file EPUBs with anchor-based TOC, track the current section
+        # by detecting anchor targets as we iterate through elements
+        anchor_map = getattr(self, 'anchor_to_toc_title', {})
+        current_anchor_title = [toc_title]  # Use list to allow mutation in nested function
+
+        def check_anchor_hierarchy(el):
+            """
+            Check if element has a TOC anchor and update current hierarchy.
+
+            For single-file EPUBs, the TOC points to anchors (id attributes) within
+            the document. As we encounter these anchors during iteration, we update
+            the hierarchy to reflect the current section.
+            """
+            if not anchor_map:
+                return
+            anchor_id = el.get('id') or el.get('name')
+            if anchor_id and anchor_id in anchor_map:
+                new_title = anchor_map[anchor_id]
+                if new_title != current_anchor_title[0]:
+                    current_anchor_title[0] = new_title
+                    self.current_hierarchy[f"level_{self.toc_level}"] = new_title
 
         def h_snapshot():
             return {
@@ -786,12 +1099,27 @@ class EpubExtractor(BaseExtractor):
 
         body = soup.find("body") or soup
 
-        # Headings set hierarchy; do NOT chunk them
+        # PASS 1: Semantic h1-h6 tags
         for h in body.find_all([f"h{i}" for i in range(1, 7)]):
+            check_anchor_hierarchy(h)  # Update section context if heading has TOC anchor
             lvl = heading_level(h.name.lower())
-            htxt = clean_text(h.get_text(" "))
+            htxt = clean_text(h.get_text())
             if htxt:
                 self._set_heading_level(lvl, htxt)
+
+        # PASS 2: Visual heading detection (opt-in)
+        if self.config.detect_visual_headings:
+            for el in body.find_all(['p', 'div', 'span']):
+                check_anchor_hierarchy(el)  # Update section context
+                if is_heading_tag(el.name.lower()):
+                    continue
+
+                if self._is_visual_heading(el):
+                    htxt = clean_text(el.get_text())
+                    if htxt:
+                        lvl = self._infer_heading_level_from_font_size(el)
+                        self._set_heading_level(lvl, htxt)
+                        el['data-processed-as-heading'] = 'true'
 
         # Block-level chunking (route-sensitive)
         BLOCK_TAGS = {
@@ -818,9 +1146,16 @@ class EpubExtractor(BaseExtractor):
         texts_for_doc_hash: List[str] = []
 
         for el in body.find_all(BLOCK_TAGS, recursive=True):
+            # Check for TOC anchors to update hierarchy (important for single-file EPUBs)
+            check_anchor_hierarchy(el)
+
             tag = (el.name or "").lower()
             if is_heading_tag(tag):
                 continue
+
+            if el.get('data-processed-as-heading'):
+                continue
+
             # prevent double-chunking: skip inline elements if they live inside a block parent
             if tag in INLINE_TAGS and el.find_parent(tuple(BLOCK_PARENTS)):
                 continue
@@ -829,7 +1164,7 @@ class EpubExtractor(BaseExtractor):
             if classes and self.class_denylist_re.search(classes):
                 continue
 
-            txt = clean_text(el.get_text(" "))
+            txt = clean_text(el.get_text())
             if not txt:
                 continue
 
@@ -839,7 +1174,11 @@ class EpubExtractor(BaseExtractor):
                 continue  # fixed windows later
 
             if tag == "li":
-                flush_paragraph(f"• {txt}", "li")
+                # Skip <li> if it contains nested block elements (e.g., <p> inside footnote <li>)
+                # This prevents duplication where both <li> and nested <p> are extracted
+                has_nested_blocks = el.find(['p', 'blockquote', 'pre', 'figure', 'div'])
+                if not has_nested_blocks:
+                    flush_paragraph(f"• {txt}", "li")
             elif tag in {"p", "blockquote", "pre", "figure"}:
                 flush_paragraph(txt, tag)
             elif tag in {
@@ -855,10 +1194,10 @@ class EpubExtractor(BaseExtractor):
                 "em",
                 "strong",
             }:
-                # Only extract container tags if they're leaf nodes (no nested blocks)
-                # This prevents extracting wrapper divs as mega-chunks
-                has_nested_blocks = el.find(['p', 'li', 'blockquote', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'section', 'article', 'div'])
-                if not has_nested_blocks and estimate_word_count(txt) >= max(
+                # Only extract container tags if they're leaf nodes (no nested extractable elements)
+                # This prevents extracting wrapper divs/spans that contain nested content
+                has_nested_extractables = el.find(list(BLOCK_TAGS))
+                if not has_nested_extractables and estimate_word_count(txt) >= max(
                     2 * self.min_paragraph_words, self.min_block_words
                 ):
                     flush_paragraph(txt, tag)
@@ -877,7 +1216,7 @@ class EpubExtractor(BaseExtractor):
 
         # Aggressive fallbacks
         if not texts_for_doc_hash:
-            doc_text = clean_text(soup.get_text(" "))
+            doc_text = clean_text(soup.get_text())
             if doc_text:
                 texts_for_doc_hash.append(doc_text)
                 words = doc_text.split()
@@ -889,11 +1228,19 @@ class EpubExtractor(BaseExtractor):
                     if len(chunk_words) >= self.min_paragraph_words:
                         flush_paragraph(" ".join(chunk_words), "fallback_window")
 
-        if not any(c for c in self.chunks_dict if c.get("chapter_href") == href):
+        # Check if we extracted any chunks for this document
+        # Need to check __raw_chunks since chunks_dict is only populated after parsing
+        current_doc_chunks = [
+            c.to_dict() if hasattr(c, 'to_dict') else c
+            for c in self._BaseExtractor__raw_chunks
+            if (c.to_dict() if hasattr(c, 'to_dict') else c).get("chapter_href") == href
+        ]
+
+        if not current_doc_chunks:
             for el in soup.find_all(True, recursive=True):
                 if is_heading_tag((el.name or "").lower()):
                     continue
-                txt = clean_text(el.get_text(" "))
+                txt = clean_text(el.get_text())
                 if txt and estimate_word_count(txt) >= max(3, self.min_paragraph_words):
                     flush_paragraph(txt, f"fallback:{(el.name or 'node')}")
 
@@ -902,7 +1249,7 @@ class EpubExtractor(BaseExtractor):
             try:
                 os.makedirs("./debug", exist_ok=True)
                 file_base = os.path.splitext(os.path.basename(self.source_path))[0]
-                raw_txt = clean_text((soup.get_text(" ") or "")[:2000])
+                raw_txt = clean_text((soup.get_text() or "")[:2000])
                 with open(
                     f"./debug/{file_base}_{order_idx:03d}_{os.path.basename(href) or 'doc'}.raw.txt",
                     "w",
@@ -917,7 +1264,7 @@ class EpubExtractor(BaseExtractor):
                     "href": href,
                     "order_idx": order_idx,
                     "body_present": bool(soup.find("body")),
-                    "total_text_len": len(soup.get_text(" ") or ""),
+                    "total_text_len": len(soup.get_text() or ""),
                     "first_300_text": raw_txt[:300],
                     "tag_counts_top10": dict(tag_counts.most_common(10)),
                     "p_count": len(soup.find_all("p")),
@@ -1011,6 +1358,74 @@ class EpubExtractor(BaseExtractor):
             source_identifiers=metadata_dict.get("source_identifiers", {}),
             md_schema_version=MD_SCHEMA_VERSION,
         )
+
+    def _apply_chunking_strategy(self):
+        """
+        Apply chunking strategy with EPUB-specific front matter and reference detection.
+
+        Extends base implementation to add front matter and reference detection after noise filtering.
+        """
+        super()._apply_chunking_strategy()
+
+        from ..core.noise_filter import NoiseFilter
+
+        if self.config.detect_front_matter or self.config.detect_references:
+            total_chunks = len(self._BaseExtractor__chunks)
+            processed = []
+            flagged_chunks = []
+            filtered_count = 0
+
+            for chunk in self._BaseExtractor__chunks:
+                chunk_dict = chunk.to_dict() if hasattr(chunk, 'to_dict') else chunk
+                should_filter = False
+
+                # Front matter detection
+                if self.config.detect_front_matter:
+                    is_fm, reason = NoiseFilter.is_front_matter(chunk_dict)
+                    if is_fm:
+                        if self.config.filter_front_matter:
+                            should_filter = True
+                            flagged_chunks.append((chunk, reason))
+                        else:
+                            if chunk.quality_flags is None:
+                                chunk.quality_flags = []
+                            chunk.quality_flags.append(f'likely_noncore_matter_{reason}')
+
+                # Reference block detection
+                if self.config.detect_references:
+                    text = chunk_dict.get('text', '')
+                    has_refs, ref_start, ref_count = NoiseFilter.detect_reference_block(text)
+                    if has_refs:
+                        if chunk.quality_flags is None:
+                            chunk.quality_flags = []
+                        chunk.quality_flags.append(f'contains_reference_block_{ref_count}_refs')
+
+                if should_filter:
+                    filtered_count += 1
+                else:
+                    processed.append(chunk)
+
+            # Safeguard: if >90% would be filtered, skip filtering (likely a TOC mapping bug)
+            if filtered_count > 0 and total_chunks > 0:
+                filter_ratio = filtered_count / total_chunks
+                if filter_ratio > 0.9:
+                    LOGGER.warning(
+                        "Front matter filter would remove %d/%d chunks (%.0f%%). "
+                        "This likely indicates a TOC hierarchy issue. Skipping filter, "
+                        "flagging chunks instead.",
+                        filtered_count, total_chunks, filter_ratio * 100
+                    )
+                    # Don't filter, just flag
+                    for chunk, reason in flagged_chunks:
+                        if chunk.quality_flags is None:
+                            chunk.quality_flags = []
+                        chunk.quality_flags.append(f'likely_noncore_matter_{reason}')
+                    processed = self._BaseExtractor__chunks
+                    filtered_count = 0
+                else:
+                    LOGGER.info("Filtered %d front/back matter chunks", filtered_count)
+
+            self._BaseExtractor__chunks = processed
 
     def get_output_data(self, analyzer=None) -> Dict[str, Any]:
         """
