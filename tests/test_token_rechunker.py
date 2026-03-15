@@ -15,6 +15,8 @@ import pytest
 from pathlib import Path
 from unittest.mock import Mock
 
+pytest.importorskip("transformers", reason="transformers not installed (finetuning extra)")
+
 from extraction.tools.tokenizer_utils import (
     load_tokenizer,
     count_tokens,

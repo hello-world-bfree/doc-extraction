@@ -4,6 +4,8 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
+pytest.importorskip("PIL", reason="Pillow not installed (images extra)")
+
 from extraction.scrapers.configs import ScraperConfig
 from extraction.scrapers.image_scraper import (
     AutoImageScraper,

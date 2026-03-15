@@ -3,6 +3,9 @@
 import json
 from pathlib import Path
 import pytest
+
+pytest.importorskip("sklearn", reason="sklearn not installed (annotation extra)")
+
 from extraction.tools.corpus_builder import CorpusBuilder
 from extraction.tools.training_builder import TrainingDataBuilder
 

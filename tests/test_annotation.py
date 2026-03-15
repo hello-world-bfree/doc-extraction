@@ -5,6 +5,9 @@ from pathlib import Path
 import json
 import tempfile
 
+pytest.importorskip("textual", reason="textual not installed (annotation extra)")
+pytest.importorskip("sklearn", reason="sklearn not installed (annotation extra)")
+
 from extraction.tools.annotate.core.session import (
     AnnotationSession,
     ChunkAnnotation,
@@ -127,7 +130,8 @@ class TestAnnotationSession:
 
         assert session.stats.total_chunks == 3
         assert session.current_index == 0
-        assert len(session.annotations) == 0
+        assert len(session.annotations) == 3
+        assert all(a.label == 0 for a in session.annotations.values())
 
     def test_get_chunk(self, sample_chunks):
         """Test getting chunk."""
@@ -144,19 +148,20 @@ class TestAnnotationSession:
         session = AnnotationSession(sample_chunks)
 
         success = session.set_annotation(
-            label=0,
-            rationale='Good',
+            label=1,
+            rationale='Bad chunk',
             confidence=5,
             issues=['missing_context'],
         )
 
         assert success
-        assert session.stats.annotated_count == 1
-        assert session.stats.good_count == 1
+        assert session.stats.annotated_count == 3
+        assert session.stats.good_count == 2
+        assert session.stats.bad_count == 1
 
         annotation = session.get_annotation()
-        assert annotation.label == 0
-        assert annotation.rationale == 'Good'
+        assert annotation.label == 1
+        assert annotation.rationale == 'Bad chunk'
 
     def test_navigation(self, sample_chunks):
         """Test chunk navigation."""
@@ -177,11 +182,12 @@ class TestAnnotationSession:
         """Test undo functionality."""
         session = AnnotationSession(sample_chunks)
 
-        session.set_annotation(label=0)
-        assert session.stats.annotated_count == 1
+        session.set_annotation(label=1)
+        assert session.stats.bad_count == 1
 
         session.undo()
-        assert session.stats.annotated_count == 0
+        assert session.stats.bad_count == 0
+        assert session.stats.good_count == 3
 
     def test_save_load(self, sample_chunks, tmp_path):
         """Test saving and loading session."""
@@ -205,8 +211,8 @@ class TestAnnotationSession:
             session_file=session_file,
         )
 
-        assert new_session.stats.annotated_count == 2
-        assert new_session.stats.good_count == 1
+        assert new_session.stats.annotated_count == 3
+        assert new_session.stats.good_count == 2
         assert new_session.stats.bad_count == 1
         assert new_session.current_index == 1
 
@@ -214,18 +220,16 @@ class TestAnnotationSession:
         """Test progress calculation."""
         session = AnnotationSession(sample_chunks)
 
-        assert session.get_progress_percent() == 0.0
+        assert session.get_progress_percent() == 100.0
 
-        session.set_annotation(label=0)
-        progress = session.get_progress_percent()
-        assert progress == pytest.approx(33.33, rel=0.1)
-
+        session.set_annotation(label=1)
         session.next_chunk()
         session.set_annotation(label=1)
         session.next_chunk()
-        session.set_annotation(label=0)
+        session.set_annotation(label=1)
 
         assert session.get_progress_percent() == 100.0
+        assert session.stats.bad_count == 3
 
 
 class TestEditedChunks:

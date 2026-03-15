@@ -72,10 +72,9 @@ test_env.py
 # Generated markdown files (exclude from git unless specifically needed)
 *.md
 !README.md
-!CHANGELOG.md
 !LICENSE
-!CHUNKING_STRATEGIES.md
-!MULTI_FORMAT_CHUNKING.md
+!docs/**/*.md
+!CLAUDE.md
 
 # Temporary files
 /tmp/

@@ -3,8 +3,10 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
-from PIL import Image
 
+pytest.importorskip("PIL", reason="Pillow not installed (images extra)")
+
+from PIL import Image
 from extraction.builders.epub_builder import EpubBuilder
 from extraction.scrapers.image_scraper import ImageData
 

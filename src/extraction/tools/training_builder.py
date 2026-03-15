@@ -15,7 +15,10 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from collections import Counter
 import sys
-from sklearn.model_selection import train_test_split
+try:
+    from sklearn.model_selection import train_test_split
+except ImportError:
+    train_test_split = None
 
 
 class TrainingDataBuilder:
@@ -213,6 +216,8 @@ class TrainingDataBuilder:
         records: List[Dict],
     ) -> Tuple[List[Dict], List[Dict]]:
         """Split records into train and test sets."""
+        if train_test_split is None:
+            raise ImportError("scikit-learn is required: install with `uv pip install doc-extraction[annotation]`")
         if len(records) == 0:
             return [], []
 

@@ -6,7 +6,10 @@ Provides tokenizer loading, caching, and token counting functions.
 
 from functools import lru_cache
 from typing import List
-from transformers import AutoTokenizer
+try:
+    from transformers import AutoTokenizer
+except ImportError:
+    AutoTokenizer = None
 
 
 @lru_cache(maxsize=1)
@@ -26,6 +29,8 @@ def load_tokenizer(model_name: str = "google/embeddinggemma-300m"):
         >>> tokenizer = load_tokenizer()
         >>> tokens = tokenizer.encode("Hello world")
     """
+    if AutoTokenizer is None:
+        raise ImportError("transformers is required: install with `uv pip install doc-extraction[finetuning]`")
     return AutoTokenizer.from_pretrained(model_name)
 
 
