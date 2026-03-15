@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ master, main ]
   schedule:
-    - cron: '0 0 * * 0'  # Weekly on Sunday at midnight UTC
+    - cron: '0 0 * * 0'
 
 jobs:
   security:
@@ -22,6 +22,7 @@ jobs:
 
     - name: Install dependencies
       run: |
+        uv venv
         uv pip install -e ".[pdf,vatican,images,finetuning,dev]"
         uv pip install safety bandit
 

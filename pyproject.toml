@@ -66,6 +66,11 @@ annotation = [
     "numpy>=1.26.0",
     "pyperclip>=1.8.0",
 ]
+capture = [
+    "textual>=0.80.0",
+    "grpcio>=1.60.0",
+    "protobuf>=4.25.0",
+]
 dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
@@ -82,6 +87,7 @@ annotate-chunks = "extraction.tools.annotate.cli:main"
 corpus-builder = "extraction.tools.corpus_builder:main"
 training-builder = "extraction.tools.training_builder:main"
 fix-hierarchy = "extraction.tools.fix_hierarchy:main"
+capture-chunks = "extraction.tools.capture.cli:main"
 
 [build-system]
 requires = ["hatchling"]

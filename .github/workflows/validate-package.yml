@@ -25,6 +25,7 @@ jobs:
 
     - name: Check package metadata
       run: |
+        uv venv
         uv pip install twine
         uv run twine check dist/*
 

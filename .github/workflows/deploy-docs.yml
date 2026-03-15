@@ -30,6 +30,7 @@ jobs:
 
     - name: Install dependencies
       run: |
+        uv venv
         uv pip install mkdocs-material
         uv pip install mkdocs-git-revision-date-localized-plugin
         uv pip install mkdocs-minify-plugin
