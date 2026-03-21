@@ -107,3 +107,13 @@ dmypy.json
 cython_debug/
 .annotation_sessions/
 .capture_sessions/
+
+# Zig build artifacts
+cores/.zig-cache/
+cores/zig-out/
+cores/zig-cache/
+
+# Native library binaries (built, not checked in)
+src/extraction/_native/lib/*.dylib
+src/extraction/_native/lib/*.so
+src/extraction/_native/lib/*.dll

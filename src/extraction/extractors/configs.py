@@ -205,6 +205,39 @@ class PdfExtractorConfig(BaseExtractorConfig):
 
 
 @dataclass
+class MuPdfPdfExtractorConfig(BaseExtractorConfig):
+    min_paragraph_words: int = 5
+    heading_font_threshold: float = 1.2
+    max_memory_mb: int = 512
+    use_ocr: bool = False
+    ocr_lang: str = "eng"
+
+    def __post_init__(self):
+        super().__post_init__()
+
+        if self.min_paragraph_words < 1:
+            raise InvalidConfigValueError(
+                "min_paragraph_words",
+                self.min_paragraph_words,
+                "Must be >= 1"
+            )
+
+        if not (1.0 <= self.heading_font_threshold <= 3.0):
+            raise InvalidConfigValueError(
+                "heading_font_threshold",
+                self.heading_font_threshold,
+                "Must be between 1.0 and 3.0"
+            )
+
+        if self.max_memory_mb < 0:
+            raise InvalidConfigValueError(
+                "max_memory_mb",
+                self.max_memory_mb,
+                "Must be >= 0 (0 = no limit)"
+            )
+
+
+@dataclass
 class HtmlExtractorConfig(BaseExtractorConfig):
     """
     Configuration for HTML extractor.

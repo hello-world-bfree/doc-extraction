@@ -20,12 +20,18 @@ from typing import List
 
 from ..extractors.epub import EpubExtractor
 from ..extractors.pdf import PdfExtractor
+
+try:
+    from ..extractors.pdf_mupdf import MuPdfPdfExtractor, NATIVE_AVAILABLE as _MUPDF_AVAILABLE
+except Exception:
+    _MUPDF_AVAILABLE = False
 from ..extractors.html import HtmlExtractor
 from ..extractors.markdown import MarkdownExtractor
 from ..extractors.json import JsonExtractor
 from ..extractors.configs import (
     EpubExtractorConfig,
     PdfExtractorConfig,
+    MuPdfPdfExtractorConfig,
     HtmlExtractorConfig,
     MarkdownExtractorConfig,
     JsonExtractorConfig,
@@ -116,6 +122,17 @@ def build_config_for_format(fmt: str, config_dict: dict):
             max_chunk_words=config_dict.get('max_chunk_words', 500),
         )
     elif fmt == 'pdf':
+        if _MUPDF_AVAILABLE:
+            return MuPdfPdfExtractorConfig(
+                min_paragraph_words=config_dict.get('min_paragraph_words', 1),
+                heading_font_threshold=config_dict.get('heading_font_threshold', 1.2),
+                max_memory_mb=config_dict.get('max_memory_mb', 512),
+                filter_noise=config_dict.get('filter_noise', True),
+                preserve_small_chunks=config_dict.get('preserve_small_chunks', True),
+                chunking_strategy=config_dict.get('chunking_strategy', 'rag'),
+                min_chunk_words=config_dict.get('min_chunk_words', 100),
+                max_chunk_words=config_dict.get('max_chunk_words', 500),
+            )
         return PdfExtractorConfig(
             min_paragraph_words=config_dict.get('min_paragraph_words', 1),
             heading_font_threshold=config_dict.get('heading_font_threshold', 1.2),
@@ -211,7 +228,10 @@ def process_document(
         if hasattr(extractor, 'debug_dump'):
             extractor.debug_dump = debug_dump
     elif fmt == 'pdf':
-        extractor = PdfExtractor(file_path, config_obj, analyzer_instance)
+        if _MUPDF_AVAILABLE and isinstance(config_obj, MuPdfPdfExtractorConfig):
+            extractor = MuPdfPdfExtractor(file_path, config_obj, analyzer_instance)
+        else:
+            extractor = PdfExtractor(file_path, config_obj, analyzer_instance)
     elif fmt == 'html':
         extractor = HtmlExtractor(file_path, config_obj, analyzer_instance)
     elif fmt == 'md':
