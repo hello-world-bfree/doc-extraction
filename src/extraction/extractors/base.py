@@ -16,7 +16,7 @@ from datetime import datetime
 from ..core.models import Chunk, Document, Metadata, Provenance, Quality
 from ..core.identifiers import sha1, stable_id
 from ..core.quality import quality_signals_from_text, score_quality, route_doc
-from ..core.strategies import get_strategy, ChunkConfig
+from ..core.strategies import get_strategy, ChunkConfig, TokenChunkConfig
 from ..state import ExtractorState
 from ..exceptions import MethodOrderError, ConfigError
 from ..analyzers.base import BaseAnalyzer
@@ -84,6 +84,7 @@ class BaseExtractor(ABC):
         self.__doc_route: str = "A"
 
         self.__raw_chunks: List[Dict[str, Any]] = []
+        self.__full_text: Optional[str] = None
 
     @property
     def chunks(self) -> List[Chunk]:
@@ -191,7 +192,7 @@ class BaseExtractor(ABC):
 
         base_metadata = self._do_extract_metadata()
 
-        full_text = " ".join(chunk.text for chunk in self.__chunks)
+        full_text = self.__full_text if self.__full_text is not None else " ".join(chunk.text for chunk in self.__chunks)
         chunks_dict = [chunk.to_dict() for chunk in self.__chunks]
 
         enriched_metadata_dict = self.analyzer.enrich_metadata(
@@ -201,6 +202,7 @@ class BaseExtractor(ABC):
         )
 
         self.__metadata = Metadata(**enriched_metadata_dict)
+        self._enrich_chunks()
         self.__state = ExtractorState.METADATA_READY
         LOGGER.debug("Extractor transitioned to METADATA_READY state")
 
@@ -256,6 +258,7 @@ class BaseExtractor(ABC):
         Args:
             full_text: Complete normalized text of document
         """
+        self.__full_text = full_text
         self.__doc_quality_signals = quality_signals_from_text(full_text)
         self.__doc_quality_score = score_quality(self.__doc_quality_signals)
         self.__doc_route = route_doc(self.__doc_quality_score)
@@ -282,12 +285,26 @@ class BaseExtractor(ABC):
 
         strategy = get_strategy(self.config.chunking_strategy)
 
-        chunk_config = ChunkConfig(
-            min_words=self.config.min_chunk_words,
-            max_words=self.config.max_chunk_words,
-            preserve_hierarchy_levels=self.config.preserve_hierarchy_levels,
-            preserve_small_chunks=self.config.preserve_small_chunks
-        )
+        if self.config.is_token_strategy:
+            chunk_config = TokenChunkConfig(
+                min_words=self.config.min_chunk_words,
+                max_words=self.config.max_chunk_words,
+                preserve_hierarchy_levels=self.config.preserve_hierarchy_levels,
+                preserve_small_chunks=self.config.preserve_small_chunks,
+                target_tokens=self.config.target_tokens,
+                min_tokens=self.config.min_tokens,
+                max_tokens=self.config.max_tokens,
+                overlap_percent=self.config.overlap_percent,
+                code_max_tokens=self.config.code_max_tokens,
+                tokenizer_name=self.config.tokenizer_name,
+            )
+        else:
+            chunk_config = ChunkConfig(
+                min_words=self.config.min_chunk_words,
+                max_words=self.config.max_chunk_words,
+                preserve_hierarchy_levels=self.config.preserve_hierarchy_levels,
+                preserve_small_chunks=self.config.preserve_small_chunks,
+            )
 
         processed_chunks = strategy.apply(raw_chunks_dicts, chunk_config)
 
@@ -302,11 +319,43 @@ class BaseExtractor(ABC):
             for chunk_dict in processed_chunks
         ]
 
+    def _enrich_chunks(self) -> None:
+        if not self.__metadata or not self.__chunks:
+            return
+
+        title = self.__metadata.title or ""
+        author = self.__metadata.author or ""
+        doc_line = ""
+        if title:
+            doc_line = f"Document: {title}"
+            if author and author != "Unknown":
+                doc_line += f" by {author}"
+
+        for chunk in self.__chunks:
+            parts = []
+            if doc_line:
+                parts.append(doc_line)
+            if chunk.heading_path:
+                parts.append(f"Section: {chunk.heading_path}")
+            if parts:
+                chunk.context_prefix = "\n".join(parts)
+
+            chunk.hypothetical_questions = self._generate_questions(chunk, title)
+
+    @staticmethod
+    def _generate_questions(chunk, doc_title: str = "") -> Optional[List[str]]:
+        from ..tools.question_generator import generate_questions_template
+        chunk_dict = chunk.to_dict() if hasattr(chunk, 'to_dict') else chunk
+        questions = generate_questions_template(chunk_dict, doc_title=doc_title)
+        return questions if questions else None
+
     def _set_provenance(
         self,
         parser_version: str,
         md_schema_version: str,
-        source_bytes: bytes
+        source_bytes: bytes = None,
+        *,
+        content_hash: str = None,
     ) -> None:
         """
         Create and store provenance information.
@@ -314,9 +363,15 @@ class BaseExtractor(ABC):
         Args:
             parser_version: Version of the parser
             md_schema_version: Version of the metadata schema
-            source_bytes: Raw bytes of source document for hashing
+            source_bytes: Raw bytes of source document for hashing (legacy)
+            content_hash: Pre-computed hash (preferred over source_bytes)
         """
         import os
+
+        if content_hash is None:
+            if source_bytes is None:
+                raise ValueError("Either source_bytes or content_hash must be provided")
+            content_hash = sha1(source_bytes)
 
         self.__provenance = Provenance(
             doc_id=stable_id(
@@ -327,7 +382,7 @@ class BaseExtractor(ABC):
             parser_version=parser_version,
             md_schema_version=md_schema_version,
             ingestion_ts=datetime.now().isoformat(),
-            content_hash=sha1(source_bytes)
+            content_hash=content_hash,
         )
 
     def _add_raw_chunk(self, chunk: Dict[str, Any]) -> None:

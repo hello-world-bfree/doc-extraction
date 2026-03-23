@@ -149,7 +149,7 @@ class TestSemanticChunkingStrategy:
 
         # First merged chunk should be Section A (paras 1-3)
         section_a_chunk = next(c for c in result if c['hierarchy'].get('level_2') == 'Section A')
-        assert section_a_chunk['word_count'] == 10 + 15 + 14  # Sum of word counts
+        assert section_a_chunk['word_count'] == len(section_a_chunk['text'].split())
         assert len(section_a_chunk['merged_paragraph_ids']) == 3
         assert '\n\n' in section_a_chunk['text']  # Paragraphs joined with double newline
 
@@ -311,8 +311,8 @@ class TestSemanticChunkingStrategy:
         assert 'merged_paragraph_ids' in merged
         assert merged['merged_paragraph_ids'] == [1, 2, 3]
 
-    def test_preserves_full_hierarchy_from_source(self):
-        """Should preserve complete hierarchy even when grouping by fewer levels."""
+    def test_clears_deep_hierarchy_on_merge(self):
+        """Should clear hierarchy levels deeper than grouping key when merged chunks disagree."""
         chunks = [
             {
                 'paragraph_id': 1,
@@ -374,12 +374,12 @@ class TestSemanticChunkingStrategy:
         assert len(result) == 1
         merged = result[0]
 
-        assert 'level_1' in merged['hierarchy']
-        assert 'level_2' in merged['hierarchy']
-        assert 'level_3' in merged['hierarchy']
-        assert 'level_4' in merged['hierarchy']
-        assert 'level_5' in merged['hierarchy']
-        assert merged['hierarchy']['level_5'] == 'Item'
+        assert merged['hierarchy']['level_1'] == 'Book'
+        assert merged['hierarchy']['level_2'] == 'Chapter'
+        assert merged['hierarchy']['level_3'] == 'Section'
+        assert merged['hierarchy']['level_4'] == ''
+        assert merged['hierarchy']['level_5'] == ''
+        assert merged['hierarchy']['level_6'] == ''
 
 
 class TestStrategyRegistry:
@@ -424,7 +424,7 @@ class TestChunkConfig:
         config = ChunkConfig()
         assert config.min_words == 100
         assert config.max_words == 500
-        assert config.preserve_hierarchy_levels == 3
+        assert config.preserve_hierarchy_levels == 5
 
     def test_custom_values(self):
         """Should accept custom values."""

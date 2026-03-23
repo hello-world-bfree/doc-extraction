@@ -6,28 +6,15 @@ while targeting specific token counts for embedding models.
 """
 
 import logging
-from dataclasses import dataclass
 from typing import List, Tuple, Dict, Any
 
 from .tokenizer_utils import count_tokens
+from extraction.core.strategies import TokenChunkConfig
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-@dataclass
-class TokenChunkConfig:
-    """Configuration for token-based chunking."""
-    target_tokens: int
-    min_tokens: int
-    max_tokens: int
-    overlap_percent: float = 0.10
-    max_absolute_tokens: int = 2048
-    tokenizer_name: str = "google/embeddinggemma-300m"
-    sentence_boundary_aware: bool = True
-
-
-# Task-specific presets
 RETRIEVAL_PRESET = TokenChunkConfig(
     target_tokens=320,
     min_tokens=256,
@@ -200,17 +187,14 @@ def validate_and_split_oversized(
         f"Splitting at sentence boundaries."
     )
 
-    # Split into sentences and re-chunk
-    sentences = chunk_text.split('. ')
+    from extraction.core.chunking import split_sentences
+
+    sentences = split_sentences(chunk_text)
     sub_chunks = []
     current = []
     current_tokens = 0
 
     for sentence in sentences:
-        # Re-add period (was split off)
-        if not sentence.endswith('.'):
-            sentence = sentence + '.'
-
         sent_tokens = count_tokens(sentence, tokenizer)
 
         if current_tokens + sent_tokens > config.max_absolute_tokens:

@@ -308,9 +308,9 @@ class TestConfigValidation:
         config = EpubExtractorConfig(visual_heading_font_threshold=3.0)
         assert config.visual_heading_font_threshold == 3.0
 
-    def test_disabled_by_default(self):
+    def test_enabled_by_default(self):
         config = EpubExtractorConfig()
-        assert config.detect_visual_headings is False
+        assert config.detect_visual_headings is True
 
     def test_default_threshold(self):
         config = EpubExtractorConfig()

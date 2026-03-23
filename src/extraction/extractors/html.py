@@ -35,7 +35,7 @@ from ..exceptions import FileNotFoundError, ParseError
 from ..analyzers.base import BaseAnalyzer
 
 PARSER_VERSION = "2.0.0-html"
-MD_SCHEMA_VERSION = "2025-09-08"
+MD_SCHEMA_VERSION = "2026-03-21"
 
 LOGGER = logging.getLogger("html_parser")
 
@@ -88,7 +88,7 @@ class HtmlExtractor(BaseExtractor):
         )
 
         try:
-            self.__soup = BeautifulSoup(source_bytes, 'html.parser')
+            self.__soup = BeautifulSoup(source_bytes, 'lxml')
 
             title_tag = self.__soup.find('title')
             self.__html_title = title_tag.get_text(strip=True) if title_tag else ""
@@ -122,8 +122,11 @@ class HtmlExtractor(BaseExtractor):
             self.__soup
         )
 
-        for elem in main_content.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'li', 'blockquote']):
+        for elem in main_content.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'li', 'blockquote', 'pre', 'code']):
             tag_name = elem.name
+
+            if tag_name == 'code' and elem.find_parent('pre'):
+                continue
 
             if is_heading_tag(tag_name):
                 level = heading_level(tag_name)
@@ -154,6 +157,13 @@ class HtmlExtractor(BaseExtractor):
             paragraph_counter += 1
             sentences = split_sentences(cleaned)
 
+            if tag_name in ('pre', 'code'):
+                ct = 'code'
+            elif tag_name == 'li':
+                ct = 'list'
+            else:
+                ct = 'prose'
+
             chunk = Chunk(
                 stable_id=stable_id(
                     self.provenance.doc_id,
@@ -177,6 +187,7 @@ class HtmlExtractor(BaseExtractor):
                 sentence_count=len(sentences),
                 sentences=sentences,
                 normalized_text=cleaned.lower(),
+                content_type=ct,
             )
 
             self._add_raw_chunk(chunk)

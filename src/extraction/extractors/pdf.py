@@ -8,6 +8,7 @@ Uses pdfplumber for text extraction with layout preservation.
 Supports font-based heading detection and optional OCR fallback.
 """
 
+import hashlib
 import logging
 import os
 from typing import Optional
@@ -33,7 +34,7 @@ from ..exceptions import DependencyError, FileNotFoundError, ParseError
 from ..analyzers.base import BaseAnalyzer
 
 PARSER_VERSION = "2.0.0-pdf"
-MD_SCHEMA_VERSION = "2025-09-08"
+MD_SCHEMA_VERSION = "2026-03-21"
 
 LOGGER = logging.getLogger("pdf_parser")
 
@@ -87,12 +88,12 @@ class PdfExtractor(BaseExtractor):
             raise FileNotFoundError(self.source_path)
 
         with open(self.source_path, 'rb') as f:
-            source_bytes = f.read()
+            file_hash = hashlib.file_digest(f, "sha1").hexdigest()
 
         self._set_provenance(
             parser_version=PARSER_VERSION,
             md_schema_version=MD_SCHEMA_VERSION,
-            source_bytes=source_bytes
+            content_hash=file_hash,
         )
 
         try:

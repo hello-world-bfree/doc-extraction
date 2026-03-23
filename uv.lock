@@ -295,6 +295,10 @@ dev = [
     { name = "pytest-cov" },
     { name = "pytest-mock" },
 ]
+embeddings = [
+    { name = "sentencepiece" },
+    { name = "transformers" },
+]
 epub-images = [
     { name = "pillow" },
 ]
@@ -345,14 +349,16 @@ requires-dist = [
     { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.11.0" },
     { name = "requests", specifier = ">=2.31.0" },
     { name = "scikit-learn", marker = "extra == 'annotation'", specifier = ">=1.5.0" },
+    { name = "sentencepiece", marker = "extra == 'embeddings'", specifier = ">=0.1.99" },
     { name = "sentencepiece", marker = "extra == 'finetuning'", specifier = ">=0.1.99" },
     { name = "textual", marker = "extra == 'annotation'", specifier = ">=0.80.0" },
     { name = "textual", marker = "extra == 'capture'", specifier = ">=0.80.0" },
     { name = "torch", marker = "extra == 'finetuning'", specifier = ">=2.1.0" },
     { name = "tqdm", specifier = ">=4.66.0" },
+    { name = "transformers", marker = "extra == 'embeddings'", specifier = ">=4.36.0" },
     { name = "transformers", marker = "extra == 'finetuning'", specifier = ">=4.36.0" },
 ]
-provides-extras = ["pdf", "vatican", "scraping", "epub-images", "s3", "images", "finetuning", "annotation", "capture", "dev"]
+provides-extras = ["pdf", "vatican", "scraping", "epub-images", "s3", "images", "embeddings", "finetuning", "annotation", "capture", "dev"]
 
 [[package]]
 name = "ebooklib"

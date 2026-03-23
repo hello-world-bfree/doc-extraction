@@ -20,7 +20,7 @@ from ..exceptions import FileNotFoundError, ParseError
 from ..analyzers.base import BaseAnalyzer
 
 PARSER_VERSION = "2.0.0-json-import"
-MD_SCHEMA_VERSION = "2025-09-08"
+MD_SCHEMA_VERSION = "2026-03-21"
 
 LOGGER = logging.getLogger("json_parser")
 

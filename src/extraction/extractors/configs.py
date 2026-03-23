@@ -15,33 +15,36 @@ from typing import Literal
 from ..exceptions import InvalidConfigValueError
 
 
+_VALID_STRATEGIES = (
+    "rag", "nlp", "semantic", "embeddings", "paragraph",
+    "token_aware", "technical", "small_to_big",
+)
+
+_TOKEN_STRATEGIES = ("token_aware", "technical", "small_to_big")
+
+
 @dataclass
 class BaseExtractorConfig:
-    """
-    Base configuration for all extractors.
 
-    Attributes:
-        chunking_strategy: Strategy for chunking text ('rag' or 'nlp')
-        min_chunk_words: Minimum words per chunk (for RAG strategy)
-        max_chunk_words: Maximum words per chunk (for RAG strategy)
-        preserve_hierarchy_levels: Number of hierarchy levels to preserve
-        filter_noise: Filter index pages, TOC, and copyright boilerplate
-        preserve_small_chunks: Preserve chunks below min_chunk_words with quality flags (default: True)
-    """
-
-    chunking_strategy: Literal["rag", "nlp", "semantic", "embeddings", "paragraph"] = "rag"
+    chunking_strategy: str = "rag"
     min_chunk_words: int = 100
     max_chunk_words: int = 500
-    preserve_hierarchy_levels: int = 3
+    preserve_hierarchy_levels: int = 5
     filter_noise: bool = True
     preserve_small_chunks: bool = True
+    target_tokens: int = 400
+    min_tokens: int = 256
+    max_tokens: int = 512
+    overlap_percent: float = 0.10
+    code_max_tokens: int = 256
+    tokenizer_name: str = "google/embeddinggemma-300m"
 
     def __post_init__(self):
-        if self.chunking_strategy not in ("rag", "nlp", "semantic", "embeddings", "paragraph"):
+        if self.chunking_strategy not in _VALID_STRATEGIES:
             raise InvalidConfigValueError(
                 "chunking_strategy",
                 self.chunking_strategy,
-                ["rag", "nlp", "semantic", "embeddings", "paragraph"]
+                list(_VALID_STRATEGIES)
             )
 
         if self.min_chunk_words < 1:
@@ -65,10 +68,45 @@ class BaseExtractorConfig:
                 "Must be between 0 and 6"
             )
 
+        if not (0 <= self.overlap_percent <= 1.0):
+            raise InvalidConfigValueError(
+                "overlap_percent",
+                self.overlap_percent,
+                "Must be between 0.0 and 1.0"
+            )
+
+        if self.min_tokens < 1:
+            raise InvalidConfigValueError(
+                "min_tokens", self.min_tokens, "Must be >= 1"
+            )
+
+        if self.max_tokens < self.min_tokens:
+            raise InvalidConfigValueError(
+                "max_tokens",
+                self.max_tokens,
+                f"Must be >= min_tokens ({self.min_tokens})"
+            )
+
+        if self.target_tokens > self.max_tokens:
+            raise InvalidConfigValueError(
+                "target_tokens",
+                self.target_tokens,
+                f"Must be <= max_tokens ({self.max_tokens})"
+            )
+
+        if self.code_max_tokens < 1:
+            raise InvalidConfigValueError(
+                "code_max_tokens", self.code_max_tokens, "Must be >= 1"
+            )
+
         if self.chunking_strategy in ("semantic", "embeddings"):
             self.chunking_strategy = "rag"
         elif self.chunking_strategy == "paragraph":
             self.chunking_strategy = "nlp"
+
+    @property
+    def is_token_strategy(self) -> bool:
+        return self.chunking_strategy in _TOKEN_STRATEGIES
 
 
 @dataclass
@@ -101,7 +139,7 @@ class EpubExtractorConfig(BaseExtractorConfig):
     reset_depth: int = 2
     class_denylist: str = r"^(?:calibre\d+|note|footnote)$"
     filter_tiny_chunks: Literal["off", "conservative", "standard", "aggressive"] = "conservative"
-    detect_visual_headings: bool = False
+    detect_visual_headings: bool = True
     visual_heading_font_threshold: float = 1.3
     detect_front_matter: bool = False
     filter_front_matter: bool = False

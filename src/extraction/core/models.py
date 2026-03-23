@@ -48,7 +48,7 @@ class Chunk:
     sentence_count: int
     sentences: List[str]
     normalized_text: str
-    footnote_citations: Optional[List[int]] = None
+    footnote_citations: Optional[Dict[str, Any]] = None
     resolved_footnotes: Optional[Dict[str, str]] = None
     ocr: Optional[bool] = None
     ocr_conf: Optional[float] = None
@@ -57,6 +57,16 @@ class Chunk:
     source_paragraph_count: Optional[int] = None
     # Quality markers (v2.5+)
     quality_flags: Optional[List[str]] = None
+    # Content type for embedding optimization (v2.6+)
+    content_type: Optional[str] = None
+    overlap_token_count: Optional[int] = None
+    context_prefix: Optional[str] = None
+    # Small-to-big retrieval (v2.7+)
+    parent_chunk_id: Optional[str] = None
+    child_chunk_ids: Optional[List[str]] = None
+    chunk_level: Optional[str] = None
+    # HyDE question generation (v2.8+)
+    hypothetical_questions: Optional[List[str]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dict format matching current output.

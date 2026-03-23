@@ -90,17 +90,25 @@ def detect_format(file_path: str) -> str:
 # ====================== Config Building ======================
 
 
+def _base_config_kwargs(config_dict: dict) -> dict:
+    return {
+        "chunking_strategy": config_dict.get("chunking_strategy", "rag"),
+        "min_chunk_words": config_dict.get("min_chunk_words", 100),
+        "max_chunk_words": config_dict.get("max_chunk_words", 500),
+        "preserve_hierarchy_levels": config_dict.get("preserve_hierarchy_levels", 5),
+        "filter_noise": config_dict.get("filter_noise", True),
+        "preserve_small_chunks": config_dict.get("preserve_small_chunks", True),
+        "target_tokens": config_dict.get("target_tokens", 400),
+        "min_tokens": config_dict.get("min_tokens", 256),
+        "max_tokens": config_dict.get("max_tokens", 512),
+        "overlap_percent": config_dict.get("overlap_percent", 0.10),
+        "code_max_tokens": config_dict.get("code_max_tokens", 256),
+        "tokenizer_name": config_dict.get("tokenizer_name", "google/embeddinggemma-300m"),
+    }
+
+
 def build_config_for_format(fmt: str, config_dict: dict):
-    """
-    Build appropriate config dataclass for the given format.
-
-    Args:
-        fmt: Format string ('epub', 'pdf', 'html', 'md', 'json')
-        config_dict: Dictionary of config options from CLI args
-
-    Returns:
-        Config dataclass instance for the format
-    """
+    base = _base_config_kwargs(config_dict)
     if fmt == 'epub':
         return EpubExtractorConfig(
             toc_hierarchy_level=config_dict.get('toc_hierarchy_level', 3),
@@ -110,16 +118,12 @@ def build_config_for_format(fmt: str, config_dict: dict):
             reset_depth=config_dict.get('reset_depth', 2),
             class_denylist=config_dict.get('class_denylist', r"^(?:calibre\d+|note|footnote)$"),
             filter_tiny_chunks=config_dict.get('filter_tiny_chunks', 'conservative'),
-            filter_noise=config_dict.get('filter_noise', True),
-            preserve_small_chunks=config_dict.get('preserve_small_chunks', True),
             detect_visual_headings=config_dict.get('detect_visual_headings', False),
             visual_heading_font_threshold=config_dict.get('visual_heading_font_threshold', 1.3),
             detect_front_matter=config_dict.get('detect_front_matter', False),
             filter_front_matter=config_dict.get('filter_front_matter', False),
             detect_references=config_dict.get('detect_references', False),
-            chunking_strategy=config_dict.get('chunking_strategy', 'rag'),
-            min_chunk_words=config_dict.get('min_chunk_words', 100),
-            max_chunk_words=config_dict.get('max_chunk_words', 500),
+            **base,
         )
     elif fmt == 'pdf':
         if _MUPDF_AVAILABLE:
@@ -127,52 +131,33 @@ def build_config_for_format(fmt: str, config_dict: dict):
                 min_paragraph_words=config_dict.get('min_paragraph_words', 1),
                 heading_font_threshold=config_dict.get('heading_font_threshold', 1.2),
                 max_memory_mb=config_dict.get('max_memory_mb', 512),
-                filter_noise=config_dict.get('filter_noise', True),
-                preserve_small_chunks=config_dict.get('preserve_small_chunks', True),
-                chunking_strategy=config_dict.get('chunking_strategy', 'rag'),
-                min_chunk_words=config_dict.get('min_chunk_words', 100),
-                max_chunk_words=config_dict.get('max_chunk_words', 500),
+                **base,
             )
         return PdfExtractorConfig(
             min_paragraph_words=config_dict.get('min_paragraph_words', 1),
             heading_font_threshold=config_dict.get('heading_font_threshold', 1.2),
             use_ocr=config_dict.get('use_ocr', False),
-            filter_noise=config_dict.get('filter_noise', True),
-            preserve_small_chunks=config_dict.get('preserve_small_chunks', True),
-            chunking_strategy=config_dict.get('chunking_strategy', 'rag'),
-            min_chunk_words=config_dict.get('min_chunk_words', 100),
-            max_chunk_words=config_dict.get('max_chunk_words', 500),
+            **base,
         )
     elif fmt == 'html':
         return HtmlExtractorConfig(
             min_paragraph_words=config_dict.get('min_paragraph_words', 1),
             preserve_links=config_dict.get('preserve_links', True),
-            filter_noise=config_dict.get('filter_noise', True),
-            preserve_small_chunks=config_dict.get('preserve_small_chunks', True),
-            chunking_strategy=config_dict.get('chunking_strategy', 'rag'),
-            min_chunk_words=config_dict.get('min_chunk_words', 100),
-            max_chunk_words=config_dict.get('max_chunk_words', 500),
+            **base,
         )
     elif fmt == 'md':
         return MarkdownExtractorConfig(
             min_paragraph_words=config_dict.get('min_paragraph_words', 1),
             preserve_code_blocks=config_dict.get('preserve_code_blocks', True),
             extract_frontmatter=config_dict.get('extract_frontmatter', True),
-            filter_noise=config_dict.get('filter_noise', True),
-            preserve_small_chunks=config_dict.get('preserve_small_chunks', True),
-            chunking_strategy=config_dict.get('chunking_strategy', 'rag'),
-            min_chunk_words=config_dict.get('min_chunk_words', 100),
-            max_chunk_words=config_dict.get('max_chunk_words', 500),
+            **base,
         )
     elif fmt == 'json':
         return JsonExtractorConfig(
             mode=config_dict.get('import_mode', 'import'),
             import_chunks=config_dict.get('import_chunks', True),
             import_metadata=config_dict.get('import_metadata', True),
-            preserve_small_chunks=config_dict.get('preserve_small_chunks', True),
-            chunking_strategy=config_dict.get('chunking_strategy', 'rag'),
-            min_chunk_words=config_dict.get('min_chunk_words', 100),
-            max_chunk_words=config_dict.get('max_chunk_words', 500),
+            **base,
         )
     else:
         return None
@@ -319,19 +304,53 @@ def process_batch(
 
     LOGGER.info("Found %d file(s)", len(files))
 
-    # Process each file
-    success_count = 0
-    for file_path in files:
-        if process_document(
-            file_path,
-            config,
-            output_dir=output_dir,
-            base_filename=None,  # Auto-generate from file name
-            ndjson=ndjson,
-            analyzer=analyzer,
-            debug_dump=debug_dump,
-        ):
-            success_count += 1
+    max_workers = min(4, os.cpu_count() or 1)
+
+    def _init_worker():
+        logging.basicConfig(
+            level=logging.WARNING,
+            format="%(levelname)s %(name)s: %(message)s",
+            force=True,
+        )
+
+    if len(files) > 1 and max_workers > 1:
+        from concurrent.futures import ProcessPoolExecutor, as_completed
+        LOGGER.info("Batch processing with %d workers", max_workers)
+
+        success_count = 0
+        with ProcessPoolExecutor(max_workers=max_workers, initializer=_init_worker) as executor:
+            futures = {
+                executor.submit(
+                    process_document,
+                    file_path,
+                    config,
+                    output_dir=output_dir,
+                    base_filename=None,
+                    ndjson=ndjson,
+                    analyzer=analyzer,
+                    debug_dump=debug_dump,
+                ): file_path
+                for file_path in files
+            }
+            for future in as_completed(futures):
+                try:
+                    if future.result():
+                        success_count += 1
+                except Exception as e:
+                    LOGGER.error("Worker failed for %s: %s", futures[future], e)
+    else:
+        success_count = 0
+        for file_path in files:
+            if process_document(
+                file_path,
+                config,
+                output_dir=output_dir,
+                base_filename=None,
+                ndjson=ndjson,
+                analyzer=analyzer,
+                debug_dump=debug_dump,
+            ):
+                success_count += 1
 
     return success_count, len(files)
 
@@ -502,9 +521,9 @@ def main():
     # Chunking strategy
     ap.add_argument(
         "--chunking-strategy",
-        choices=["rag", "semantic", "embeddings", "nlp", "paragraph"],
+        choices=["rag", "semantic", "embeddings", "nlp", "paragraph", "token_aware", "technical", "small_to_big"],
         default=cfg.get("chunking_strategy", "rag"),
-        help=f"Chunking strategy: 'rag' (100-500 words for embeddings), 'nlp' (paragraph-level for fine-grained analysis). Aliases: semantic=rag, embeddings=rag, paragraph=nlp (default: {cfg.get('chunking_strategy', 'rag')})",
+        help=f"Chunking strategy (default: {cfg.get('chunking_strategy', 'rag')})",
     )
     ap.add_argument(
         "--min-chunk-words",
@@ -517,6 +536,41 @@ def main():
         type=int,
         default=cfg.get("max_chunk_words", 500),
         help=f"Maximum words per chunk for semantic/RAG strategy (default: {cfg.get('max_chunk_words', 500)})",
+    )
+    ap.add_argument(
+        "--target-tokens",
+        type=int,
+        default=cfg.get("target_tokens", 400),
+        help="Target tokens per chunk for token_aware strategy (default: 400)",
+    )
+    ap.add_argument(
+        "--min-tokens",
+        type=int,
+        default=cfg.get("min_tokens", 256),
+        help="Minimum tokens per chunk for token_aware strategy (default: 256)",
+    )
+    ap.add_argument(
+        "--max-tokens",
+        type=int,
+        default=cfg.get("max_tokens", 512),
+        help="Maximum tokens per chunk for token_aware strategy (default: 512)",
+    )
+    ap.add_argument(
+        "--overlap-percent",
+        type=float,
+        default=cfg.get("overlap_percent", 0.10),
+        help="Overlap percentage for token_aware strategy (default: 0.10)",
+    )
+    ap.add_argument(
+        "--code-max-tokens",
+        type=int,
+        default=cfg.get("code_max_tokens", 256),
+        help="Max tokens for code blocks in token_aware strategy (default: 256)",
+    )
+    ap.add_argument(
+        "--tokenizer-name",
+        default=cfg.get("tokenizer_name", "google/embeddinggemma-300m"),
+        help="Tokenizer model name for token_aware strategy",
     )
 
     # Logging
@@ -590,6 +644,13 @@ def main():
         "chunking_strategy": args.chunking_strategy,
         "min_chunk_words": args.min_chunk_words,
         "max_chunk_words": args.max_chunk_words,
+        # Token-aware strategy
+        "target_tokens": args.target_tokens,
+        "min_tokens": args.min_tokens,
+        "max_tokens": args.max_tokens,
+        "overlap_percent": args.overlap_percent,
+        "code_max_tokens": args.code_max_tokens,
+        "tokenizer_name": args.tokenizer_name,
     }
 
     # Single-file mode

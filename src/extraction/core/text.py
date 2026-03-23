@@ -11,25 +11,36 @@ import re
 import unicodedata
 
 
-# Unicode characters to normalize away
 SOFT_HYPHEN = "\u00ad"
-ZW_SPACES = r"[\u200B-\u200D\u2060\uFEFF]"
 
-# Predefined month patterns for date extraction
 MONTHS = (
     r'Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)|Apr(?:il)|May|Jun(?:e)|'
     r'Jul(?:y)|Aug(?:ust)|Sep(?:t\.|tember)|Oct(?:ober)|Nov(?:ember)|Dec(?:ember)'
 )
+
+_ZW_SPACES_RE = re.compile(r'[\u200B-\u200D\u2060\uFEFF]')
+_HTML_TAG_RE = re.compile(r'<[^>]+>')
+_WHITESPACE_RE = re.compile(r'\s+')
+_VERSE_NUM_RE = re.compile(r'(\b\d+)([A-Z][a-z])')
+_NUM_DOT_RE = re.compile(r'(\b\d+)\s+\.')
+_SPACE_BEFORE_PUNCT_RE = re.compile(r'\s+([,;:!?])')
+_SPACE_BEFORE_CLOSE_RE = re.compile(r'\s+([."\')\]\}])')
+_SPACE_AFTER_OPEN_RE = re.compile(r'([(["\'])\s+')
+_SPACED_CAPS_RE = re.compile(r'\b(?:[A-Z]\s){2,}[A-Z]\b')
+_SPACED_CAP_PAIR_RE = re.compile(r'\b([A-Z])\s(?=[A-Z]{2,}\b)')
+_CHAPTER_RE = re.compile(r'^\s*(?:chapter|chap\.?)\s*\d+\s*[:.\-–—]\s*', re.IGNORECASE)
+_ARABIC_NUM_RE = re.compile(r'^\s*\d+\s*[.)]')
+_ROMAN_NUM_RE = re.compile(r'^\s*[IVXLC]{2,}\s*[.)]', re.IGNORECASE)
+_BARE_NUM_RE = re.compile(r'^\s*\d+\s+')
+_LEADING_PUNCT_RE = re.compile(r'^[\s.)\-–—]+')
 
 
 def normalize_spaced_caps(s: str) -> str:
     """Fix spaced small-caps artifacts (e.g. 'S E C O N D' → 'SECOND')."""
     if not s:
         return s
-    # A) "S E C O N D" → "SECOND"
-    s = re.sub(r'\b(?:[A-Z]\s){2,}[A-Z]\b', lambda m: m.group(0).replace(' ', ''), s)
-    # B) "S ON" → "SON" (also handles "P RODIGAL" → "PRODIGAL")
-    s = re.sub(r'\b([A-Z])\s(?=[A-Z]{2,}\b)', r'\1', s)
+    s = _SPACED_CAPS_RE.sub(lambda m: m.group(0).replace(' ', ''), s)
+    s = _SPACED_CAP_PAIR_RE.sub(r'\1', s)
     return s
 
 
@@ -39,23 +50,27 @@ def clean_text(s: str) -> str:
     if not s:
         return ""
     s = unicodedata.normalize("NFC", s)
-    # Remove soft hyphen and zero-width spaces
     s = s.replace(SOFT_HYPHEN, "")
-    s = re.sub(ZW_SPACES, "", s)
-    # Strip any remaining HTML tags (e.g., <i>, <em>, <b>, <strong>)
-    s = re.sub(r'<[^>]+>', '', s)
-    # Collapse whitespace
-    s = re.sub(r"\s+", " ", s)
+    s = _ZW_SPACES_RE.sub("", s)
+    s = _HTML_TAG_RE.sub('', s)
+    s = _WHITESPACE_RE.sub(" ", s)
     s = s.replace("\u00a0", " ").strip()
-    # Fix verse numbers without space (e.g., "29On" -> "29 On")
-    s = re.sub(r'(\b\d+)([A-Z][a-z])', r'\1 \2', s)
-    # Tighten punctuation spacing
-    s = re.sub(r'(\b\d+)\s+\.', r'\1.', s)
-    s = re.sub(r'\s+([,;:!?])', r'\1', s)
-    s = re.sub(r'\s+([."\')\]\}])', r'\1', s)
-    s = re.sub(r'([(["\'])\s+', r'\1', s)
-    # Fix small-caps artifacts
+    s = _VERSE_NUM_RE.sub(r'\1 \2', s)
+    s = _NUM_DOT_RE.sub(r'\1.', s)
+    s = _SPACE_BEFORE_PUNCT_RE.sub(r'\1', s)
+    s = _SPACE_BEFORE_CLOSE_RE.sub(r'\1', s)
+    s = _SPACE_AFTER_OPEN_RE.sub(r'\1', s)
     s = normalize_spaced_caps(s)
+    return s
+
+
+def clean_code_text(s: str) -> str:
+    if not s:
+        return ""
+    s = unicodedata.normalize("NFC", s)
+    s = s.replace(SOFT_HYPHEN, "")
+    s = _ZW_SPACES_RE.sub("", s)
+    s = s.replace("\u00a0", " ")
     return s
 
 
@@ -69,16 +84,11 @@ def clean_toc_title(s: str) -> str:
     if not s:
         return s
     s = clean_text(s)
-    # Remove "Chapter 5:" etc.
-    s = re.sub(r'^\s*(?:chapter|chap\.?)\s*\d+\s*[:.\-–—]\s*', '', s, flags=re.I)
-    # Remove "1.", "1)", "IV.", etc. - Roman numerals MUST be followed by punctuation
-    # This prevents matching bare letters like "C" in "Copyright" or "I" in "Index"
-    s = re.sub(r'^\s*\d+\s*[.)]', '', s, flags=re.I)  # Arabic numerals with punctuation
-    s = re.sub(r'^\s*[IVXLC]{2,}\s*[.)]', '', s, flags=re.I)  # Roman numerals (2+ chars) with punctuation
-    # Remove bare leading numbers followed by spaces (e.g., "1 Introduction")
-    s = re.sub(r'^\s*\d+\s+', '', s)
-    # Clean up any leading punctuation/spaces left over
-    s = re.sub(r'^[\s.)\-–—]+', '', s)
+    s = _CHAPTER_RE.sub('', s)
+    s = _ARABIC_NUM_RE.sub('', s)
+    s = _ROMAN_NUM_RE.sub('', s)
+    s = _BARE_NUM_RE.sub('', s)
+    s = _LEADING_PUNCT_RE.sub('', s)
     return s
 
 

@@ -60,6 +60,7 @@ retrieval_corpus/
 *_corpus/
 *.jsonl
 __to_delete/
+coverage.json
 
 # Extraction library specific
 *_metadata.json
@@ -75,6 +76,15 @@ test_env.py
 !LICENSE
 !docs/**/*.md
 !CLAUDE.md
+
+# Large test fixtures (keep only small fixtures tracked)
+tests/fixtures/sample_epubs/*.epub
+!tests/fixtures/sample_epubs/simple.epub
+tests/fixtures/sample_pdfs/*.pdf
+!tests/fixtures/sample_pdfs/redbook-5th-edition.pdf
+!tests/fixtures/sample_pdfs/sigmod_photon.pdf
+!tests/fixtures/sample_pdfs/The Rust Programming Language.pdf
+tests/fixtures/sample_html/
 
 # Temporary files
 /tmp/

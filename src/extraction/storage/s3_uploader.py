@@ -1,7 +1,10 @@
+import logging
 import mimetypes
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
+
+LOGGER = logging.getLogger(__name__)
 
 try:
     import boto3
@@ -92,17 +95,33 @@ class S3Uploader:
             print(f"Unexpected error uploading {local_path.name}: {e}")
             return None
 
-    def upload_images(self, image_paths: list[Path], metadata_dict: Optional[dict] = None) -> dict[Path, str]:
-        results = {}
+    def upload_images(self, image_paths: list[Path], metadata_dict: Optional[dict] = None, max_workers: int = 4) -> dict[Path, str]:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
 
-        for image_path in image_paths:
+        def _upload_one(image_path: Path) -> tuple[Path, Optional[str]]:
             metadata = None
             if metadata_dict and image_path in metadata_dict:
                 metadata = metadata_dict[image_path]
+            url = self.upload_image(image_path, metadata=metadata)
+            return image_path, url
 
-            s3_url = self.upload_image(image_path, metadata=metadata)
-            if s3_url:
-                results[image_path] = s3_url
+        results = {}
+        if len(image_paths) <= 1:
+            for image_path in image_paths:
+                path, url = _upload_one(image_path)
+                if url:
+                    results[path] = url
+        else:
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = {executor.submit(_upload_one, p): p for p in image_paths}
+                for future in as_completed(futures):
+                    try:
+                        path, url = future.result()
+                        if url:
+                            results[path] = url
+                    except Exception as e:
+                        failed_path = futures[future]
+                        LOGGER.error("Upload failed for %s: %s", failed_path, e)
 
         return results
 

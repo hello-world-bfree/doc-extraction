@@ -11,15 +11,43 @@ hierarchical document structures (headings, table of contents).
 import re
 from typing import Dict, List
 
+_SENTENCE_SPLIT_RE = re.compile(r'(?<=[.!?])\s+(?=[A-Z""\'(])')
+
+ABBREVIATIONS = frozenset({
+    'St', 'Dr', 'Rev', 'Fr', 'Sr', 'Br', 'Ven', 'Bl', 'Abp', 'Bp', 'Msgr',
+    'Prof', 'Mr', 'Mrs', 'Ms', 'Jr', 'Sgt', 'Lt', 'Col', 'Gen', 'Capt',
+    'cf', 'ibid', 'op', 'loc', 'cit', 'viz', 'approx',
+    'i.e', 'e.g', 'n.b', 'vs', 'etc', 'al', 'ff',
+    'vol', 'art', 'no', 'ed', 'trans', 'ch', 'pt', 'sec', 'pp', 'p',
+    'infra', 'supra',
+    'Jan', 'Feb', 'Mar', 'Apr', 'Jun', 'Jul', 'Aug', 'Sep', 'Sept',
+    'Oct', 'Nov', 'Dec',
+    'Gen', 'Ex', 'Lev', 'Num', 'Deut', 'Josh', 'Judg',
+    'Sam', 'Kgs', 'Chr', 'Neh', 'Esth', 'Ps', 'Prov', 'Eccl',
+    'Isa', 'Jer', 'Lam', 'Ezek', 'Dan', 'Hos', 'Mic', 'Hab',
+    'Zeph', 'Hag', 'Zech', 'Mal',
+    'Sir', 'Wis', 'Tob', 'Jdt', 'Bar', 'Macc',
+    'Mt', 'Mk', 'Lk', 'Jn', 'Rom', 'Cor', 'Gal', 'Eph',
+    'Phil', 'Col', 'Thess', 'Tim', 'Tit', 'Phlm', 'Heb',
+    'Jas', 'Pet', 'Rev',
+})
+
+_ABBREV_RE = re.compile(
+    r'\b(' + '|'.join(re.escape(a) for a in sorted(ABBREVIATIONS, key=len, reverse=True)) + r')\.\s+',
+)
+_SENTINEL = '\x00'
+
 
 def split_sentences(text: str) -> List[str]:
-    """Simple sentence splitter based on punctuation boundaries.
+    """Abbreviation-aware sentence splitter.
 
-    Splits on sentence-ending punctuation (.!?) followed by whitespace
+    Protects known abbreviations from triggering false splits, then
+    splits on sentence-ending punctuation (.!?) followed by whitespace
     and an uppercase letter or opening quote/parenthesis.
     """
-    sents = re.split(r'(?<=[.!?])\s+(?=[A-Z""\'(])', text)
-    return [s for s in sents if s.strip()]
+    protected = _ABBREV_RE.sub(lambda m: m.group(0).replace('. ', '.' + _SENTINEL), text)
+    sents = _SENTENCE_SPLIT_RE.split(protected)
+    return [s.replace(_SENTINEL, ' ').strip() for s in sents if s.strip()]
 
 
 def heading_path(hierarchy: Dict[str, str]) -> str:

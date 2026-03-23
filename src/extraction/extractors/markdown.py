@@ -15,7 +15,7 @@ from typing import Dict, Optional, Tuple
 
 from .base import BaseExtractor
 from .configs import MarkdownExtractorConfig
-from ..core.chunking import split_sentences
+from ..core.chunking import split_sentences, hierarchy_depth, heading_path
 from ..core.extraction import (
     extract_cross_references,
     extract_dates,
@@ -28,7 +28,7 @@ from ..exceptions import FileNotFoundError, ParseError
 from ..analyzers.base import BaseAnalyzer
 
 PARSER_VERSION = "2.0.0-markdown"
-MD_SCHEMA_VERSION = "2025-09-08"
+MD_SCHEMA_VERSION = "2026-03-21"
 
 LOGGER = logging.getLogger("markdown_parser")
 
@@ -161,14 +161,46 @@ class MarkdownExtractor(BaseExtractor):
                 continue
 
             if self.config.preserve_code_blocks and line.strip().startswith('```'):
-                code_lines = [line]
+                opening_fence = line.strip()
+                lang_hint = opening_fence[3:].strip()
+                code_lines = []
                 i += 1
                 while i < len(lines) and not lines[i].strip().startswith('```'):
                     code_lines.append(lines[i])
                     i += 1
                 if i < len(lines):
-                    code_lines.append(lines[i])
                     i += 1
+
+                code_text = '\n'.join(code_lines)
+                if code_text.strip():
+                    paragraph_counter += 1
+                    code_word_count = estimate_word_count(code_text)
+                    chunk = Chunk(
+                        stable_id=stable_id(
+                            self.provenance.doc_id,
+                            "code_block",
+                            str(paragraph_counter)
+                        ),
+                        paragraph_id=paragraph_counter,
+                        text=code_text,
+                        hierarchy=current_hierarchy.copy(),
+                        chapter_href="",
+                        source_order=paragraph_counter,
+                        source_tag="code_block",
+                        text_length=len(code_text),
+                        word_count=code_word_count,
+                        cross_references=[],
+                        scripture_references=[],
+                        dates_mentioned=[],
+                        heading_path=heading_path(current_hierarchy),
+                        hierarchy_depth=hierarchy_depth(current_hierarchy),
+                        doc_stable_id=self.provenance.doc_id,
+                        sentence_count=1,
+                        sentences=[code_text],
+                        normalized_text=code_text.lower(),
+                        content_type="code",
+                    )
+                    self._add_raw_chunk(chunk)
 
                 continue
 
@@ -218,12 +250,13 @@ class MarkdownExtractor(BaseExtractor):
                     cross_references=extract_cross_references(cleaned),
                     scripture_references=extract_scripture_references(cleaned),
                     dates_mentioned=extract_dates(cleaned),
-                    heading_path=" / ".join(h for h in current_hierarchy.values() if h),
-                    hierarchy_depth=sum(1 for h in current_hierarchy.values() if h),
+                    heading_path=heading_path(current_hierarchy),
+                    hierarchy_depth=hierarchy_depth(current_hierarchy),
                     doc_stable_id=self.provenance.doc_id,
                     sentence_count=len(sentences),
                     sentences=sentences,
                     normalized_text=cleaned.lower(),
+                    content_type="prose",
                 )
 
                 self._add_raw_chunk(chunk)

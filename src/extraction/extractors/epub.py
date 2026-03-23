@@ -8,6 +8,7 @@ Refactored from book_parser_no_footnotes.py to use core utilities and BaseExtrac
 Maintains exact backward compatibility with original parser behavior.
 """
 
+import hashlib
 import logging
 import os
 import re
@@ -40,6 +41,7 @@ from ..core.models import Metadata
 from ..core.text import (
     MONTHS,
     clean_text,
+    clean_code_text,
     clean_toc_title,
     estimate_word_count,
     normalize_ascii,
@@ -48,7 +50,7 @@ from ..core.text import (
 # ====================== Constants ======================
 
 PARSER_VERSION = "2.0.0-refactored"
-MD_SCHEMA_VERSION = "2025-09-08"
+MD_SCHEMA_VERSION = "2026-03-21"
 FOOTNOTE_MAX = 999  # cap to reduce false positives
 
 LOGGER = logging.getLogger("epub_parser")
@@ -438,9 +440,9 @@ class EpubExtractor(BaseExtractor):
         toc_count = len(self.href_to_toc_title) + len(getattr(self, 'anchor_to_toc_title', {}))
         LOGGER.info("✓ EPUB loaded. TOC entries: %d", toc_count)
 
-        # Create provenance
-        src_bytes = open(self.source_path, "rb").read()
-        self._set_provenance(PARSER_VERSION, MD_SCHEMA_VERSION, src_bytes)
+        with open(self.source_path, "rb") as f:
+            file_hash = hashlib.file_digest(f, "sha1").hexdigest()
+        self._set_provenance(PARSER_VERSION, MD_SCHEMA_VERSION, content_hash=file_hash)
 
     def _norm_href(self, href: Optional[str], keep_fragment: bool = False) -> str:
         """
@@ -537,42 +539,45 @@ class EpubExtractor(BaseExtractor):
         return False
 
     def _build_toc_mapping(self):
-        """
-        Build mapping from href to TOC title.
-
-        For single-file EPUBs with anchor-based navigation, also builds
-        an anchor_to_toc_title mapping for hierarchy updates during parsing.
-        """
         self.anchor_to_toc_title: Dict[str, str] = {}
+        self.anchor_to_toc_depth: Dict[str, int] = {}
+        self.href_to_toc_depth: Dict[str, int] = {}
+        self.title_to_toc_depth: Dict[str, int] = {}
 
-        def walk(node):
+        def _store(full_href, base_href, title, depth):
+            if base_href and title:
+                if base_href not in self.href_to_toc_title:
+                    self.href_to_toc_title[base_href] = title
+                    self.href_to_toc_depth[base_href] = depth
+            if "#" in full_href and title:
+                anchor = full_href.split("#", 1)[1]
+                if anchor:
+                    self.anchor_to_toc_title[anchor] = title
+                    self.anchor_to_toc_depth[anchor] = depth
+            if title:
+                normalized = title.lower().strip()
+                if normalized not in self.title_to_toc_depth:
+                    self.title_to_toc_depth[normalized] = depth
+
+        def walk(node, depth=1):
             try:
                 if isinstance(node, epub.Link):
                     full_href = self._norm_href(node.href, keep_fragment=True)
                     base_href = self._norm_href(node.href, keep_fragment=False)
                     raw_title = clean_text(node.title)
                     title = clean_toc_title(raw_title)
-                    if base_href and title:
-                        self.href_to_toc_title[base_href] = title
-                    # Also store anchor mapping for single-file EPUBs
-                    if "#" in full_href and title:
-                        anchor = full_href.split("#", 1)[1]
-                        if anchor:
-                            self.anchor_to_toc_title[anchor] = title
+                    _store(full_href, base_href, title, depth)
                 elif isinstance(node, (list, tuple)):
-                    if node and isinstance(node[0], epub.Link):
-                        full_href = self._norm_href(node[0].href, keep_fragment=True)
-                        base_href = self._norm_href(node[0].href, keep_fragment=False)
-                        raw_title = clean_text(node[0].title)
+                    header = node[0] if node else None
+                    if header and isinstance(header, (epub.Link, epub.Section)):
+                        href_val = getattr(header, 'href', '') or ''
+                        full_href = self._norm_href(href_val, keep_fragment=True)
+                        base_href = self._norm_href(href_val, keep_fragment=False)
+                        raw_title = clean_text(header.title)
                         title = clean_toc_title(raw_title)
-                        if base_href and title:
-                            self.href_to_toc_title[base_href] = title
-                        if "#" in full_href and title:
-                            anchor = full_href.split("#", 1)[1]
-                            if anchor:
-                                self.anchor_to_toc_title[anchor] = title
+                        _store(full_href, base_href, title, depth)
                     for child in node[1] if len(node) > 1 else []:
-                        walk(child)
+                        walk(child, depth + 1)
             except Exception as e:
                 LOGGER.debug("TOC node error: %s", e)
 
@@ -797,16 +802,10 @@ class EpubExtractor(BaseExtractor):
         # Apply chunking strategy (default: 'rag')
         self._apply_chunking_strategy()
 
-        # Update chunks_dict to match strategy output for backward compatibility
-        self.chunks_dict = [
-            chunk.to_dict() if hasattr(chunk, 'to_dict') else chunk
-            for chunk in self._BaseExtractor__chunks
-        ]
-
         LOGGER.info(
             "✓ Extracted %d paragraphs → %d chunks (strategy: %s); route=%s (%.2f)",
             len(self._BaseExtractor__raw_chunks),
-            len(self.chunks_dict),
+            len(self._BaseExtractor__chunks),
             self.config.chunking_strategy,
             self._BaseExtractor__doc_route,
             self._BaseExtractor__doc_quality_score,
@@ -997,8 +996,10 @@ class EpubExtractor(BaseExtractor):
             self._reset_lower_hierarchy()
 
         toc_title = self.href_to_toc_title.get(href, "")
+        toc_depth = self.href_to_toc_depth.get(href, 1)
         if toc_title:
-            self.current_hierarchy[f"level_{self.toc_level}"] = toc_title
+            target_level = min(self.toc_level + toc_depth - 1, 6)
+            self._set_heading_level(target_level, toc_title)
 
         # For single-file EPUBs with anchor-based TOC, track the current section
         # by detecting anchor targets as we iterate through elements
@@ -1006,13 +1007,6 @@ class EpubExtractor(BaseExtractor):
         current_anchor_title = [toc_title]  # Use list to allow mutation in nested function
 
         def check_anchor_hierarchy(el):
-            """
-            Check if element has a TOC anchor and update current hierarchy.
-
-            For single-file EPUBs, the TOC points to anchors (id attributes) within
-            the document. As we encounter these anchors during iteration, we update
-            the hierarchy to reflect the current section.
-            """
             if not anchor_map:
                 return
             anchor_id = el.get('id') or el.get('name')
@@ -1020,7 +1014,9 @@ class EpubExtractor(BaseExtractor):
                 new_title = anchor_map[anchor_id]
                 if new_title != current_anchor_title[0]:
                     current_anchor_title[0] = new_title
-                    self.current_hierarchy[f"level_{self.toc_level}"] = new_title
+                    depth = self.anchor_to_toc_depth.get(anchor_id, 1)
+                    target_level = min(self.toc_level + depth - 1, 6)
+                    self._set_heading_level(target_level, new_title)
 
         def h_snapshot():
             return {
@@ -1029,8 +1025,11 @@ class EpubExtractor(BaseExtractor):
 
         def flush_paragraph(text: str, source_tag: str) -> None:
             nonlocal global_para_id
-            text = clean_text(text)
-            if not text or estimate_word_count(text) < self.min_paragraph_words:
+            if source_tag == "pre":
+                text = clean_code_text(text)
+            else:
+                text = clean_text(text)
+            if not text or (source_tag != "pre" and estimate_word_count(text) < self.min_paragraph_words):
                 return
 
             h = h_snapshot()
@@ -1083,8 +1082,15 @@ class EpubExtractor(BaseExtractor):
             }
             # Attach sentences and normalized text
             chunk["sentence_count"] = len(sents)
-            chunk["sentences"] = sents[:6]
-            chunk["normalized_text"] = normalize_ascii(chunk["text"])
+            chunk["sentences"] = sents
+            chunk["normalized_text"] = chunk["text"].lower()
+
+            if source_tag in ("pre", "code"):
+                chunk["content_type"] = "code"
+            elif source_tag == "li":
+                chunk["content_type"] = "list"
+            else:
+                chunk["content_type"] = "prose"
 
             # Attach footnote citations (NEW)
             if footnote_all:
@@ -1098,14 +1104,6 @@ class EpubExtractor(BaseExtractor):
                 self._add_raw_chunk(chunk)
 
         body = soup.find("body") or soup
-
-        # PASS 1: Semantic h1-h6 tags
-        for h in body.find_all([f"h{i}" for i in range(1, 7)]):
-            check_anchor_hierarchy(h)  # Update section context if heading has TOC anchor
-            lvl = heading_level(h.name.lower())
-            htxt = clean_text(h.get_text())
-            if htxt:
-                self._set_heading_level(lvl, htxt)
 
         # PASS 2: Visual heading detection (opt-in)
         if self.config.detect_visual_headings:
@@ -1123,6 +1121,7 @@ class EpubExtractor(BaseExtractor):
 
         # Block-level chunking (route-sensitive)
         BLOCK_TAGS = {
+            "h1", "h2", "h3", "h4", "h5", "h6",
             "p",
             "blockquote",
             "li",
@@ -1135,7 +1134,6 @@ class EpubExtractor(BaseExtractor):
             "header",
             "footer",
             "main",
-            # odd EPUBs: inline wrappers
             "span",
             "a",
             "em",
@@ -1151,6 +1149,17 @@ class EpubExtractor(BaseExtractor):
 
             tag = (el.name or "").lower()
             if is_heading_tag(tag):
+                htxt = clean_text(el.get_text())
+                if htxt:
+                    raw_lvl = heading_level(tag)
+                    htxt_cleaned = clean_toc_title(htxt)
+                    toc_depth = self.title_to_toc_depth.get((htxt_cleaned or htxt).lower().strip())
+                    if toc_depth is not None:
+                        target_lvl = min(self.toc_level + toc_depth - 1, 6)
+                    else:
+                        target_lvl = min(raw_lvl + self.toc_level, 6)
+                    if target_lvl > self.toc_level:
+                        self._set_heading_level(target_lvl, htxt)
                 continue
 
             if el.get('data-processed-as-heading'):
@@ -1164,7 +1173,10 @@ class EpubExtractor(BaseExtractor):
             if classes and self.class_denylist_re.search(classes):
                 continue
 
-            txt = clean_text(el.get_text())
+            if tag == "pre":
+                txt = clean_code_text(el.get_text())
+            else:
+                txt = clean_text(el.get_text())
             if not txt:
                 continue
 
@@ -1174,8 +1186,6 @@ class EpubExtractor(BaseExtractor):
                 continue  # fixed windows later
 
             if tag == "li":
-                # Skip <li> if it contains nested block elements (e.g., <p> inside footnote <li>)
-                # This prevents duplication where both <li> and nested <p> are extracted
                 has_nested_blocks = el.find(['p', 'blockquote', 'pre', 'figure', 'div'])
                 if not has_nested_blocks:
                     flush_paragraph(f"• {txt}", "li")
@@ -1298,7 +1308,7 @@ class EpubExtractor(BaseExtractor):
         Returns:
             Metadata object with all fields populated
         """
-        if not self.chunks_dict:
+        if not self.chunks:
             raise ParseError(self.source_path, "No chunks available. Call parse() first.")
 
         # Extract base metadata from EPUB
@@ -1334,8 +1344,9 @@ class EpubExtractor(BaseExtractor):
 
         # Optionally enrich with domain-specific metadata
         if self.analyzer is not None:
-            full_text = " ".join(ch["text"] for ch in self.chunks_dict)
-            metadata_dict = self.analyzer.enrich_metadata(base_metadata, full_text, self.chunks_dict)
+            chunks_as_dicts = [c.to_dict() for c in self.chunks]
+            full_text = " ".join(ch["text"] for ch in chunks_as_dicts)
+            metadata_dict = self.analyzer.enrich_metadata(base_metadata, full_text, chunks_as_dicts)
         else:
             metadata_dict = base_metadata
 
@@ -1374,12 +1385,12 @@ class EpubExtractor(BaseExtractor):
             processed = []
             flagged_chunks = []
             filtered_count = 0
+            removed_parent_ids = set()
 
             for chunk in self._BaseExtractor__chunks:
                 chunk_dict = chunk.to_dict() if hasattr(chunk, 'to_dict') else chunk
                 should_filter = False
 
-                # Front matter detection
                 if self.config.detect_front_matter:
                     is_fm, reason = NoiseFilter.is_front_matter(chunk_dict)
                     if is_fm:
@@ -1391,7 +1402,6 @@ class EpubExtractor(BaseExtractor):
                                 chunk.quality_flags = []
                             chunk.quality_flags.append(f'likely_noncore_matter_{reason}')
 
-                # Reference block detection
                 if self.config.detect_references:
                     text = chunk_dict.get('text', '')
                     has_refs, ref_start, ref_count = NoiseFilter.detect_reference_block(text)
@@ -1400,8 +1410,13 @@ class EpubExtractor(BaseExtractor):
                             chunk.quality_flags = []
                         chunk.quality_flags.append(f'contains_reference_block_{ref_count}_refs')
 
+                if chunk.parent_chunk_id and chunk.parent_chunk_id in removed_parent_ids:
+                    should_filter = True
+
                 if should_filter:
                     filtered_count += 1
+                    if getattr(chunk, 'chunk_level', None) == 'parent' and chunk.child_chunk_ids:
+                        removed_parent_ids.add(chunk.stable_id)
                 else:
                     processed.append(chunk)
 
@@ -1441,7 +1456,7 @@ class EpubExtractor(BaseExtractor):
         Returns:
             Dictionary with keys: metadata, chunks, extraction_info
         """
-        if not self.chunks_dict:
+        if not self.chunks:
             raise ParseError(self.source_path, "No chunks available. Call parse() first.")
         if self.metadata is None:
             raise RuntimeError("No metadata available. Call extract_metadata() first.")
@@ -1478,22 +1493,21 @@ class EpubExtractor(BaseExtractor):
         }
 
         # Optionally enrich with domain-specific metadata
+        output_chunks = [c.to_dict() for c in self.chunks]
         if self.analyzer is not None:
-            full_text = " ".join(ch["text"] for ch in self.chunks_dict)
-            raw_metadata = self.analyzer.enrich_metadata(base_metadata, full_text, self.chunks_dict)
+            full_text = " ".join(ch["text"] for ch in output_chunks)
+            raw_metadata = self.analyzer.enrich_metadata(base_metadata, full_text, output_chunks)
         else:
             raw_metadata = base_metadata
 
-        # Add provenance and quality
         raw_metadata["provenance"] = self.provenance.to_dict()
         raw_metadata["quality"] = self.quality.to_dict()
 
-        # Use chunks_dict directly for backward compatibility
         return {
             "metadata": raw_metadata,
-            "chunks": self.chunks_dict,
+            "chunks": output_chunks,
             "extraction_info": {
-                "total_paragraphs": len(self.chunks_dict),
+                "total_paragraphs": len(output_chunks),
                 "extraction_date": datetime.now().isoformat(),
                 "source_file": os.path.basename(self.source_path),
                 "parser_version": PARSER_VERSION,

@@ -327,32 +327,36 @@ class VaticanArchiveProcessor:
         temp_output_dir = self.work_dir / "outputs" / "temp"
         upload_count = 0
 
-        for doc in tqdm(processed, desc="Uploading to R2"):
-            try:
-                basename = self._get_output_basename(doc)
-                local_json = temp_output_dir / f"{basename}.json"
-                local_ndjson = temp_output_dir / f"{basename}.ndjson"
+        from concurrent.futures import ThreadPoolExecutor, as_completed
 
-                # Check files exist
-                if not local_json.exists() or not local_ndjson.exists():
-                    LOGGER.warning("Output files not found for: %s", doc.title)
+        def _upload_one(doc):
+            basename = self._get_output_basename(doc)
+            local_json = temp_output_dir / f"{basename}.json"
+            local_ndjson = temp_output_dir / f"{basename}.ndjson"
+
+            if not local_json.exists() or not local_ndjson.exists():
+                LOGGER.warning("Output files not found for: %s", doc.title)
+                return doc, None
+
+            r2_paths = self.storage.upload_document_outputs(
+                local_json=str(local_json),
+                local_ndjson=str(local_ndjson),
+                doc=doc
+            )
+            return doc, r2_paths
+
+        max_workers = min(4, len(processed)) if len(processed) > 1 else 1
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_upload_one, doc): doc for doc in processed}
+            for future in tqdm(as_completed(futures), total=len(futures), desc="Uploading to R2"):
+                try:
+                    doc, r2_paths = future.result()
+                    if r2_paths:
+                        self.index.mark_processed(doc.url, r2_paths)
+                        upload_count += 1
+                except Exception as e:
+                    LOGGER.error("Failed to upload %s: %s", futures[future].title, e)
                     continue
-
-                # Upload
-                r2_paths = self.storage.upload_document_outputs(
-                    local_json=str(local_json),
-                    local_ndjson=str(local_ndjson),
-                    doc=doc
-                )
-
-                # Mark as uploaded
-                if r2_paths:
-                    self.index.mark_processed(doc.url, r2_paths)
-                    upload_count += 1
-
-            except Exception as e:
-                LOGGER.error("Failed to upload %s: %s", doc.title, e)
-                continue
 
         # Save index
         self.index.save()

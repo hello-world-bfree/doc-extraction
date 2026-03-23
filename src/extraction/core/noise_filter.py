@@ -11,6 +11,44 @@ Detects and filters chunks with low semantic value for embeddings:
 import re
 from typing import Dict, Any
 
+_NUMBER_TOKEN_RE = re.compile(r'^[\d\*,\.\-:;]+$')
+_REFERENCE_PATTERN_RE = re.compile(r'(?:\d+[\*,\.\-:;\s]+){5,}')
+_DIGITS_RE = re.compile(r'\d+')
+_NAV_PATTERNS = [
+    re.compile(r'^\s*(next|previous|home|back|forward|up)\s*$'),
+    re.compile(r'^\s*(chapter|section|part)\s+\d+\s*$'),
+    re.compile(r'^\s*page\s+\d+\s*$'),
+]
+_COPYRIGHT_RE = re.compile(r'©|\bcopyright\b|\ball rights reserved\b')
+_ISBN_RE = re.compile(r'\bisbn\b|publisher code|catalog number')
+_INDEX_WORD_RE = re.compile(r'\bindex\b')
+_INDEX_EXCLUDE_RE = re.compile(r'index(?:ing|ed|es)')
+_NOTES_WORD_RE = re.compile(r'\bnotes\b')
+_NOTES_EXCLUDE_RE = re.compile(r'note(?:d|worthy)')
+_GEO_MAP_RE = re.compile(r'\bgeography\b|\bmap(?:s)?\b')
+_ABOUT_PUBLISHER_RE = re.compile(r'^about\s+(?!the\s+author)')
+_PUBLISHER_NAME_RE = re.compile(r'publishing|press|books|editions|media|house')
+_DEDICATION_PATTERNS = [
+    re.compile(r'^\s*dedicated to\b'),
+    re.compile(r'^\s*for\s+(my|our|the)\s+\w+'),
+    re.compile(r'^\s*for\s+\w+\s*,\s*(my|our|the)'),
+    re.compile(r'^\s*in memory of\b'),
+    re.compile(r'^\s*to\s+(my|our|the)\s+\w+'),
+]
+_CITATION_INDICATOR_PATTERNS = [
+    re.compile(r'\(\d{4}\)', re.IGNORECASE),
+    re.compile(r'\bIbid\b', re.IGNORECASE),
+    re.compile(r'\bed\.\s', re.IGNORECASE),
+    re.compile(r'\btrans\.\s', re.IGNORECASE),
+    re.compile(r'\bvol\.\s', re.IGNORECASE),
+    re.compile(r':\s*\d+[-–]\d+', re.IGNORECASE),
+    re.compile(r',\s*\d+[-–]\d+\.', re.IGNORECASE),
+]
+_CITATION_NUMBER_RE = re.compile(
+    r'(?:^|\n)\s*(\d{1,3})\.\s+([A-Z](?:[a-z]+|\.)\s*[A-Z]?)',
+    re.MULTILINE
+)
+
 
 class NoiseFilter:
     """
@@ -42,20 +80,15 @@ class NoiseFilter:
         if not tokens:
             return False
 
-        # Check 1: High number density
-        number_tokens = sum(1 for t in tokens if re.match(r'^[\d\*,\.\-:;]+$', t))
+        number_tokens = sum(1 for t in tokens if _NUMBER_TOKEN_RE.match(t))
         number_ratio = number_tokens / len(tokens)
 
         if number_ratio > 0.5:
             return True
 
-        # Check 2: Repetitive reference patterns
-        # Matches: "123 45* 678" or "1:1-31 2:1-25" patterns
-        reference_pattern = r'(?:\d+[\*,\.\-:;\s]+){5,}'
-        if re.search(reference_pattern, text):
-            # Verify it's mostly numbers
-            nums_in_text = len(re.findall(r'\d+', text))
-            if nums_in_text > len(tokens) * 0.3:  # 30%+ of tokens contain numbers
+        if _REFERENCE_PATTERN_RE.search(text):
+            nums_in_text = len(_DIGITS_RE.findall(text))
+            if nums_in_text > len(tokens) * 0.3:
                 return True
 
         # Check 3: High token/word ratio (indicates special chars/symbols)
@@ -90,14 +123,8 @@ class NoiseFilter:
             if word_count < 20:  # Short chunks in TOC/index sections
                 return True
 
-        # Navigation keywords
-        nav_patterns = [
-            r'^\s*(next|previous|home|back|forward|up)\s*$',
-            r'^\s*(chapter|section|part)\s+\d+\s*$',
-            r'^\s*page\s+\d+\s*$',
-        ]
-        for pattern in nav_patterns:
-            if re.match(pattern, text):
+        for pattern in _NAV_PATTERNS:
+            if pattern.match(text):
                 return True
 
         return False
@@ -114,14 +141,12 @@ class NoiseFilter:
         """
         text = chunk.get('text', '').strip().lower()
 
-        # Copyright patterns
-        if re.search(r'©|\bcopyright\b|\ball rights reserved\b', text):
+        if _COPYRIGHT_RE.search(text):
             word_count = chunk.get('word_count', 0)
-            if word_count < 50:  # Short copyright notices
+            if word_count < 50:
                 return True
 
-        # ISBN/Publisher codes
-        if re.search(r'\bisbn\b|publisher code|catalog number', text):
+        if _ISBN_RE.search(text):
             return True
 
         return False
@@ -156,16 +181,8 @@ class NoiseFilter:
             for i in range(1, 7)
         ]
 
-        # Pattern 1: Explicit dedication phrases
-        dedication_patterns = [
-            r'^\s*dedicated to\b',
-            r'^\s*for\s+(my|our|the)\s+\w+',
-            r'^\s*for\s+\w+\s*,\s*(my|our|the)',
-            r'^\s*in memory of\b',
-            r'^\s*to\s+(my|our|the)\s+\w+',
-        ]
-        for pattern in dedication_patterns:
-            if re.search(pattern, text_lower):
+        for pattern in _DEDICATION_PATTERNS:
+            if pattern.search(text_lower):
                 return (True, 'dedication_phrase')
 
         # Pattern 2: Endorsement/testimonial sections
@@ -211,8 +228,8 @@ class NoiseFilter:
                     return (True, 'front_matter_toc_label')
             # "About [Publisher Name]" pattern (but not "about the author")
             # Matches: "about wyatt north publishing", "about penguin press", etc.
-            if re.match(r'^about\s+(?!the\s+author)', label):
-                if re.search(r'publishing|press|books|editions|media|house', label):
+            if _ABOUT_PUBLISHER_RE.match(label):
+                if _PUBLISHER_NAME_RE.search(label):
                     return (True, 'front_matter_toc_label')
 
         # Pattern 4: Back matter TOC labels (hierarchy-based)
@@ -243,17 +260,18 @@ class NoiseFilter:
 
         # Pattern 5: Standalone "index", "notes", "geography", "map" (require exact or bounded match)
         # These are common words so we need to be more careful with matching
+        level_1 = hierarchy.get('level_1', '').lower()
         for label in hierarchy_labels:
-            # Exact matches
-            if label in {'index', 'notes', 'geography'}:
+            if label in {'index', 'geography'}:
                 return (True, 'back_matter_toc_label')
-            # Word boundary matches (e.g., "Book Index" but not "Indexing Strategies")
-            if re.search(r'\bindex\b', label) and not re.search(r'index(?:ing|ed|es)', label):
+            if _INDEX_WORD_RE.search(label) and not _INDEX_EXCLUDE_RE.search(label):
                 return (True, 'back_matter_toc_label')
-            if re.search(r'\bnotes\b', label) and not re.search(r'note(?:s|d|worthy)', label):
+            if _GEO_MAP_RE.search(label):
                 return (True, 'back_matter_toc_label')
-            if re.search(r'\bgeography\b|\bmap(?:s)?\b', label):
-                return (True, 'back_matter_toc_label')
+        if level_1 in {'notes', 'endnotes'}:
+            return (True, 'back_matter_toc_label')
+        if _NOTES_WORD_RE.search(level_1) and not _NOTES_EXCLUDE_RE.search(level_1):
+            return (True, 'back_matter_toc_label')
 
         # Pattern 6: Book outlines (hierarchy-based)
         if any('outline' in label for label in hierarchy_labels):
@@ -282,12 +300,7 @@ class NoiseFilter:
 
         # Pattern for numbered citations (must have number + period + author-like text)
         # Matches: "1. Name" or "12. Name" or "4. R. R. Reno" at start of line or after newline
-        citation_pattern = re.compile(
-            r'(?:^|\n)\s*(\d{1,3})\.\s+([A-Z](?:[a-z]+|\.)\s*[A-Z]?)',
-            re.MULTILINE
-        )
-
-        matches = list(citation_pattern.finditer(text))
+        matches = list(_CITATION_NUMBER_RE.finditer(text))
         if len(matches) < 2:
             return (False, -1, 0)
 
@@ -313,19 +326,10 @@ class NoiseFilter:
         # Additional validation: check for citation-like content
         # (years in parentheses, "Ibid.", publisher patterns)
         ref_section = text[matches[0].start():]
-        citation_indicators = [
-            r'\(\d{4}\)',           # (2005)
-            r'\bIbid\b',            # Ibid.
-            r'\bed\.\s',            # ed. or eds.
-            r'\btrans\.\s',         # trans.
-            r'\bvol\.\s',           # vol.
-            r':\s*\d+[-–]\d+',      # : 123-456 (page ranges)
-            r',\s*\d+[-–]\d+\.',    # , 123-456. (page ranges at end)
-        ]
 
         indicator_matches = sum(
-            1 for pattern in citation_indicators
-            if re.search(pattern, ref_section, re.IGNORECASE)
+            1 for pattern in _CITATION_INDICATOR_PATTERNS
+            if pattern.search(ref_section)
         )
 
         # Need at least 2 citation indicators to confirm
