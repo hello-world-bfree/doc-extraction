@@ -37,6 +37,14 @@ The library supports both through pluggable strategies applied **after** format-
 | **Aliases** | `rag`, `semantic`, `embeddings` | `nlp`, `paragraph` |
 | **Default** | ✅ Yes | No |
 
+| Aspect | `token_aware` | `technical` | `small_to_big` |
+|--------|--------------|-------------|----------------|
+| **Target chunk size** | 256-512 tokens | 256-512 tokens | Parent + child tokens |
+| **Merging behavior** | Token-counted with overlap | Content-type-aware splitting | Two-level parent/child |
+| **Use cases** | Embedding models with token limits | Technical docs with code blocks | Hierarchical retrieval |
+| **Aliases** | `token_aware` | `technical` | `small_to_big` |
+| **Default** | No | No | No |
+
 ## RAG/Semantic Strategy
 
 ### Algorithm Overview
@@ -59,7 +67,7 @@ Output: Semantic chunks (100-500 words each)
 
 **1. Group by hierarchy**
 
-Paragraphs are grouped using the first N hierarchy levels (default: 3):
+Paragraphs are grouped using the first N hierarchy levels (default: 5):
 
 ```python
 # Example hierarchy keys
@@ -234,8 +242,8 @@ The `preserve_hierarchy_levels` config controls how many hierarchy levels define
 config = ChunkConfig(preserve_hierarchy_levels=1)
 # Groups: ("Part I",), ("Part II",)
 
-# Levels 1-3 (default, fine-grained)
-config = ChunkConfig(preserve_hierarchy_levels=3)
+# Levels 1-5 (default, fine-grained)
+config = ChunkConfig(preserve_hierarchy_levels=5)
 # Groups: ("Part I", "Chapter 1", "Section A"), ("Part I", "Chapter 1", "Section B")
 
 # All 6 levels (finest grouping)
@@ -333,6 +341,47 @@ Median: 38 words
 ```
 
 **Processing time**: Fastest (no merging overhead).
+
+## Token-Aware Strategies
+
+Three additional strategies use actual tokenizer output (embeddinggemma-300m by default) instead of word counts:
+
+### `token_aware`
+
+Default token-aware strategy. Chunks text to target token counts with configurable overlap between chunks. Optimized for embedding models with specific token limits.
+
+- Target: `target_tokens` (default 400) tokens per chunk
+- Range: `min_tokens` (256) to `max_tokens` (512)
+- Overlap: `overlap_percent` (10%) sentence-aware overlap
+- Code blocks capped at `code_max_tokens` (256)
+
+### `technical`
+
+Optimized for technical documentation with code blocks. Same as `token_aware` but with content-type-aware splitting that treats code blocks differently from prose.
+
+### `small_to_big`
+
+Produces parent and child chunks for small-to-big retrieval patterns. Child chunks are used for precise matching; parent chunks provide broader context. Adds `parent_chunk_id`, `child_chunk_ids`, and `chunk_level` fields to chunks.
+
+### Configuration
+
+```python
+from extraction.extractors.configs import BaseExtractorConfig
+
+config = BaseExtractorConfig(
+    chunking_strategy="token_aware",
+    target_tokens=400,
+    min_tokens=256,
+    max_tokens=512,
+    overlap_percent=0.10,
+    tokenizer_name="google/embeddinggemma-300m",
+)
+```
+
+```bash
+extract document.epub --chunking-strategy token_aware --target-tokens 400
+extract document.epub --chunking-strategy small_to_big
+```
 
 ## Hierarchy Preservation Across Merges
 
@@ -445,9 +494,11 @@ If paragraphs are consistently short and don't reach `min_words` after merging:
 ]
 ```
 
-With `min_words=100`, these would be dropped unless you have **many** under the same hierarchy.
+With `min_words=100`, these would historically be dropped unless you have **many** under the same hierarchy.
 
-**Solution**:
+By default, chunks below `min_chunk_words` are preserved with `quality_flags: ["below_rag_minimum"]` rather than filtered. Use `--filter-small-chunks` to revert to hard filtering. See [Working with Quality Flags](../how-to/quality-flags.md).
+
+**Additional tuning options**:
 
 - Lower `min_words` (e.g., 50)
 - Increase `preserve_hierarchy_levels` to merge across broader sections
@@ -718,11 +769,15 @@ Chunking strategies determine how paragraphs are segmented after extraction:
 
 - **RAG mode**: Merges paragraphs into 100-500 word semantic chunks (76% reduction)
 - **NLP mode**: Preserves paragraph boundaries for fine-grained analysis
+- **Token-aware modes**: `token_aware`, `technical`, `small_to_big` — use actual tokenizer output for precise token control
 
 Choose based on your application:
 
 - Vector search? → RAG
 - NER/classification? → NLP
-- Both? → Extract twice with different strategies
+- Exact token control for embeddings? → `token_aware`
+- Technical docs with code? → `technical`
+- Hierarchical retrieval? → `small_to_big`
+- Both word and token strategies? → Extract twice with different strategies
 
 The strategy is applied **after** format-specific parsing, ensuring consistent behavior across EPUB, PDF, HTML, Markdown, and JSON inputs.

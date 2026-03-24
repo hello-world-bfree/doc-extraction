@@ -9,7 +9,8 @@ All extractors accept a configuration dataclass that controls extraction behavio
 ```
 BaseExtractorConfig (all formats)
 ├── EpubExtractorConfig (EPUB-specific)
-├── PdfExtractorConfig (PDF-specific)
+├── PdfExtractorConfig (PDF/pdfplumber)
+├── MuPdfPdfExtractorConfig (PDF/MuPDF native)
 ├── HtmlExtractorConfig (HTML-specific)
 ├── MarkdownExtractorConfig (Markdown-specific)
 └── JsonExtractorConfig (JSON-specific)
@@ -27,19 +28,31 @@ Base configuration inherited by all format-specific configs.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `chunking_strategy` | `Literal["rag", "nlp", "semantic", "embeddings", "paragraph"]` | `"rag"` | Chunking strategy. `rag`/`semantic`/`embeddings`: Merge paragraphs (100-500 words). `nlp`/`paragraph`: One paragraph per chunk. |
+| `chunking_strategy` | `Literal["rag", "nlp", "semantic", "embeddings", "paragraph", "token_aware", "technical", "small_to_big"]` | `"rag"` | Chunking strategy. `rag`/`semantic`/`embeddings`: Merge paragraphs (100-500 words). `nlp`/`paragraph`: One paragraph per chunk. `token_aware`/`technical`/`small_to_big`: Token-optimized strategies using a tokenizer. |
 | `min_chunk_words` | `int` | `100` | Minimum words per chunk (RAG strategy only). |
 | `max_chunk_words` | `int` | `500` | Maximum words per chunk (RAG strategy only). |
-| `preserve_hierarchy_levels` | `int` | `3` | Number of hierarchy levels to preserve when merging chunks (0-6). |
+| `preserve_hierarchy_levels` | `int` | `5` | Number of hierarchy levels to preserve when merging chunks (0-6). |
 | `filter_noise` | `bool` | `True` | Filter index pages, TOC, and copyright boilerplate. |
+| `preserve_small_chunks` | `bool` | `True` | Preserve chunks below min_chunk_words with quality flags instead of filtering them out. |
+| `target_tokens` | `int` | `400` | Target tokens per chunk for token-aware strategies. |
+| `min_tokens` | `int` | `256` | Minimum tokens per chunk for token-aware strategies. |
+| `max_tokens` | `int` | `512` | Maximum tokens per chunk for token-aware strategies. |
+| `overlap_percent` | `float` | `0.10` | Overlap percentage between chunks for token-aware strategies (0.0-1.0). |
+| `code_max_tokens` | `int` | `256` | Maximum tokens for code blocks in token-aware strategies. |
+| `tokenizer_name` | `str` | `"google/embeddinggemma-300m"` | Tokenizer model name for token-aware strategies. |
 
 ### Validation Rules
 
-- `chunking_strategy`: Must be one of `["rag", "nlp", "semantic", "embeddings", "paragraph"]`
+- `chunking_strategy`: Must be one of `["rag", "nlp", "semantic", "embeddings", "paragraph", "token_aware", "technical", "small_to_big"]`
   - Aliases: `semantic` → `rag`, `embeddings` → `rag`, `paragraph` → `nlp`
 - `min_chunk_words`: Must be ≥ 1
 - `max_chunk_words`: Must be ≥ `min_chunk_words`
 - `preserve_hierarchy_levels`: Must be 0-6
+- `overlap_percent`: Must be 0.0-1.0
+- `min_tokens`: Must be ≥ 1
+- `max_tokens`: Must be ≥ `min_tokens`
+- `target_tokens`: Must be ≤ `max_tokens`
+- `code_max_tokens`: Must be ≥ 1
 
 ### Example
 
@@ -50,8 +63,19 @@ config = BaseExtractorConfig(
     chunking_strategy="rag",
     min_chunk_words=150,
     max_chunk_words=400,
-    preserve_hierarchy_levels=3,
-    filter_noise=True
+    preserve_hierarchy_levels=5,
+    filter_noise=True,
+    preserve_small_chunks=True,
+)
+
+# Token-aware strategy
+config = BaseExtractorConfig(
+    chunking_strategy="token_aware",
+    target_tokens=400,
+    min_tokens=256,
+    max_tokens=512,
+    overlap_percent=0.10,
+    tokenizer_name="google/embeddinggemma-300m",
 )
 ```
 
@@ -71,13 +95,18 @@ Configuration for EPUB extraction.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `toc_hierarchy_level` | `int` | `3` | Hierarchy level (1-6) where TOC titles are inserted. `1` = top-level, `6` = deepest. |
+| `toc_hierarchy_level` | `int` | `1` | Hierarchy level (1-6) where TOC titles are inserted. `1` = top-level, `6` = deepest. |
 | `min_paragraph_words` | `int` | `6` | Minimum words to consider text as a paragraph. Paragraphs below this are skipped. |
 | `min_block_words` | `int` | `30` | Minimum words to chunk generic block tags (div, section, etc.). |
 | `preserve_hierarchy_across_docs` | `bool` | `False` | Whether to preserve heading hierarchy across EPUB spine documents. `False` = reset at doc boundaries. |
 | `reset_depth` | `int` | `2` | When not preserving hierarchy, clear levels ≥ this depth (1-6) at document boundaries. |
 | `class_denylist` | `str` | `r"^(?:calibre\d+\|note\|footnote)$"` | Regex pattern for CSS classes to exclude (footnotes, calibre artifacts). |
 | `filter_tiny_chunks` | `Literal["off", "conservative", "standard", "aggressive"]` | `"conservative"` | Tiny chunk filtering level. `conservative` = index/TOC/punctuation (-47.6%), `standard` = +bullets/refs (-48.8%), `aggressive` = +appendixes (-60%), `off` = disabled. |
+| `detect_visual_headings` | `bool` | `True` | Enable visual heading detection from inline font-size styles. Note: CLI default is `False`; must opt-in with `--detect-visual-headings`. |
+| `visual_heading_font_threshold` | `float` | `1.3` | Font-size multiplier threshold for visual heading detection (1.0-3.0). |
+| `detect_front_matter` | `bool` | `False` | Enable front/back matter detection (dedications, glossaries, indexes, etc.). |
+| `filter_front_matter` | `bool` | `False` | Hard filter detected front/back matter. Requires `detect_front_matter=True`. |
+| `detect_references` | `bool` | `False` | Enable end-of-chapter reference/citation block detection. |
 
 ### Validation Rules
 
@@ -89,6 +118,7 @@ All base rules plus:
 - `reset_depth`: Must be 1-6
 - `class_denylist`: Must be valid regex pattern
 - `filter_tiny_chunks`: Must be one of `["off", "conservative", "standard", "aggressive"]`
+- `visual_heading_font_threshold`: Must be 1.0-3.0
 
 ### Example
 
@@ -103,13 +133,18 @@ config = EpubExtractorConfig(
     filter_noise=True,
 
     # EPUB-specific
-    toc_hierarchy_level=3,
+    toc_hierarchy_level=1,
     min_paragraph_words=6,
     min_block_words=30,
     preserve_hierarchy_across_docs=False,
     reset_depth=2,
     class_denylist=r"^(?:calibre\d+|note|footnote)$",
-    filter_tiny_chunks="conservative"
+    filter_tiny_chunks="conservative",
+    detect_visual_headings=True,
+    visual_heading_font_threshold=1.3,
+    detect_front_matter=False,
+    filter_front_matter=False,
+    detect_references=False,
 )
 ```
 
@@ -146,7 +181,7 @@ Hierarchy flows continuously across all spine documents (no reset).
 
 ## PdfExtractorConfig
 
-Configuration for PDF extraction.
+Configuration for PDF extraction using pdfplumber.
 
 **Module**: `extraction.extractors.configs`
 
@@ -206,6 +241,59 @@ config = PdfExtractorConfig(heading_font_threshold=1.1)
 
 # Conservative (for PDFs where body text varies in size)
 config = PdfExtractorConfig(heading_font_threshold=1.5)
+```
+
+---
+
+## MuPdfPdfExtractorConfig
+
+Configuration for PDF extraction using the native Zig/MuPDF library.
+
+**Module**: `extraction.extractors.configs`
+
+**Class**: `MuPdfPdfExtractorConfig`
+
+**Inherits**: `BaseExtractorConfig`
+
+!!! note
+    Auto-selected by CLI when the native Zig/MuPDF library is available. Falls back to `PdfExtractorConfig` (pdfplumber) otherwise.
+
+### Additional Fields
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `min_paragraph_words` | `int` | `5` | Minimum words to consider text as a paragraph. |
+| `heading_font_threshold` | `float` | `1.2` | Font size multiplier to detect headings (1.0-3.0). |
+| `max_memory_mb` | `int` | `512` | Maximum memory for MuPDF context in MB. `0` = no limit. |
+| `use_ocr` | `bool` | `False` | Whether to use OCR for image-based PDFs. |
+| `ocr_lang` | `str` | `"eng"` | OCR language code. |
+
+### Validation Rules
+
+All base rules plus:
+
+- `min_paragraph_words`: Must be ≥ 1
+- `heading_font_threshold`: Must be 1.0-3.0
+- `max_memory_mb`: Must be ≥ 0 (0 = no limit)
+
+### Example
+
+```python
+from extraction.extractors.configs import MuPdfPdfExtractorConfig
+
+config = MuPdfPdfExtractorConfig(
+    # Base config
+    chunking_strategy="rag",
+    min_chunk_words=100,
+    max_chunk_words=500,
+
+    # MuPDF-specific
+    min_paragraph_words=5,
+    heading_font_threshold=1.2,
+    max_memory_mb=512,
+    use_ocr=False,
+    ocr_lang="eng",
+)
 ```
 
 ---
@@ -303,7 +391,6 @@ Extracted as:
 ```python
 metadata.title = "My Document"
 metadata.author = "Jane Doe"
-# ... other fields ...
 ```
 
 ---
@@ -370,7 +457,7 @@ config = EpubExtractorConfig(
     filter_noise=True,
 
     # EPUB-specific fields
-    toc_hierarchy_level=3,
+    toc_hierarchy_level=1,
     preserve_hierarchy_across_docs=True
 )
 ```
@@ -434,12 +521,80 @@ Quick reference for all default values:
 
 | Config Class | Key Defaults |
 |--------------|--------------|
-| `BaseExtractorConfig` | `chunking_strategy="rag"`, `min_chunk_words=100`, `max_chunk_words=500`, `filter_noise=True` |
-| `EpubExtractorConfig` | All base + `toc_hierarchy_level=3`, `min_paragraph_words=6`, `filter_tiny_chunks="conservative"` |
-| `PdfExtractorConfig` | All base + `min_paragraph_words=5`, `heading_font_threshold=1.2`, `use_ocr=False` |
+| `BaseExtractorConfig` | `chunking_strategy="rag"`, `min_chunk_words=100`, `max_chunk_words=500`, `preserve_hierarchy_levels=5`, `filter_noise=True`, `preserve_small_chunks=True`, `target_tokens=400`, `min_tokens=256`, `max_tokens=512`, `overlap_percent=0.10`, `code_max_tokens=256`, `tokenizer_name="google/embeddinggemma-300m"` |
+| `EpubExtractorConfig` | All base + `toc_hierarchy_level=1`, `min_paragraph_words=6`, `filter_tiny_chunks="conservative"`, `detect_visual_headings=True`, `visual_heading_font_threshold=1.3`, `detect_front_matter=False`, `filter_front_matter=False`, `detect_references=False` |
+| `PdfExtractorConfig` | All base + `min_paragraph_words=5`, `heading_font_threshold=1.2`, `use_ocr=False`, `ocr_lang="eng"` |
+| `MuPdfPdfExtractorConfig` | All base + `min_paragraph_words=5`, `heading_font_threshold=1.2`, `max_memory_mb=512`, `use_ocr=False`, `ocr_lang="eng"` |
 | `HtmlExtractorConfig` | All base + `min_paragraph_words=1`, `preserve_links=False` |
 | `MarkdownExtractorConfig` | All base + `preserve_code_blocks=True`, `extract_frontmatter=True` |
 | `JsonExtractorConfig` | All base + `mode="import"`, `import_chunks=True`, `import_metadata=True` |
+
+## Configuration File Loading
+
+Configuration is loaded from a 5-layer priority chain (highest priority wins):
+
+| Priority | Source | Description |
+|----------|--------|-------------|
+| 1 (highest) | CLI flags | Command-line arguments (e.g., `--chunking-strategy rag`) |
+| 2 | `./extraction.toml` | Project-level config in working directory |
+| 3 | `pyproject.toml` | `[tool.extraction]` section (searches current dir and parents) |
+| 4 | `~/.config/extraction/config.toml` | User-level config |
+| 5 (lowest) | Built-in defaults | Hardcoded in `DEFAULT_CONFIG` |
+
+### Viewing Active Config
+
+```bash
+# Show which config files are active and their priority
+extract --show-config
+```
+
+### Generating a Config File
+
+```bash
+# Generate a sample extraction.toml with all options documented
+extract --init-config
+```
+
+### Example `extraction.toml`
+
+```toml
+chunking_strategy = "rag"
+min_chunk_words = 100
+max_chunk_words = 500
+
+filter_noise = true
+filter_tiny_chunks = "conservative"
+preserve_small_chunks = true
+
+# Front/back matter detection (EPUB only)
+detect_front_matter = false
+filter_front_matter = false
+
+# Reference block detection (EPUB only)
+detect_references = false
+
+# Visual heading detection (EPUB only)
+detect_visual_headings = false
+visual_heading_font_threshold = 1.3
+
+# Hierarchy settings (EPUB only)
+toc_hierarchy_level = 1
+preserve_hierarchy_across_docs = false
+
+# Default analyzer: "generic" or "catholic"
+analyzer = "generic"
+```
+
+### Example `pyproject.toml`
+
+```toml
+[tool.extraction]
+chunking_strategy = "rag"
+min_chunk_words = 150
+max_chunk_words = 400
+filter_noise = true
+analyzer = "generic"
+```
 
 ## See Also
 

@@ -44,6 +44,18 @@ The Extraction Library is a production-ready Python package for transforming doc
 
     Three-layer architecture: Extractors → Analyzers → Output. Extend with custom analyzers for domain-specific enrichment.
 
+-   :material-tools:{ .lg .middle } **Data Quality Tools**
+
+    ---
+
+    Interactive TUI for annotation, corpus building, and ML training dataset generation. Label chunks, build corpora, train classifiers.
+
+-   :material-speedometer:{ .lg .middle } **Native PDF Parser**
+
+    ---
+
+    Optional Zig/MuPDF backend for high-performance PDF extraction with font-based heading detection and multi-level hierarchy.
+
 </div>
 
 ## Quick Start
@@ -98,7 +110,7 @@ extract book.epub --chunking-strategy rag --min-chunk-words 200
 
 ### Chunking Strategies
 
-Choose between **RAG mode** (semantic chunks, 100-500 words) or **NLP mode** (paragraph-level chunks) across all formats:
+Choose between **RAG mode** (semantic chunks, 100-500 words), **NLP mode** (paragraph-level chunks), or **token-aware mode** (token-optimized for embedding models) across all formats:
 
 ```bash
 # RAG mode (default): Optimal for vector databases
@@ -255,6 +267,12 @@ Catholic literature, legal documents, academic papers - extensible analyzer syst
     ---
 
     Complete API documentation
+
+-   :material-tag-check:{ .lg .middle } **[Annotation Workflow](how-to/annotation-workflow.md)**
+
+    ---
+
+    Label chunk quality and build training datasets
 
 </div>
 

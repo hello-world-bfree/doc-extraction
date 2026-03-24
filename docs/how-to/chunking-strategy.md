@@ -19,6 +19,9 @@ graph TD
 
 - **RAG strategy** (default): Vector search, semantic retrieval, question answering
 - **NLP strategy**: Sentence classification, NER, paragraph-level analysis
+- **Need exact token control for embedding models?** → Use `token_aware`
+- **Technical documentation with code blocks?** → Use `technical`
+- **Need small-to-big retrieval (parent + child chunks)?** → Use `small_to_big`
 
 ## Strategy Comparison
 
@@ -155,6 +158,9 @@ Real-world example: "Prayer Primer.epub" (1,234 paragraphs)
 |----------|--------|-----------------|----------|
 | **RAG** (default) | 412 | 250 | Vector search, embeddings |
 | **NLP** | 1,234 | 67 | NER, classification |
+| **token_aware** | ~450 | 256-512 tokens | Embedding models with token limits |
+| **technical** | ~450 | 256-512 tokens | Technical docs with code blocks |
+| **small_to_big** | Parent + child | Parent + child | Hierarchical retrieval |
 
 **Storage impact** (with embeddings):
 
@@ -201,6 +207,38 @@ extractor = PdfExtractor("document.pdf", config={
 
 !!! tip "Token-based re-chunking"
     For production embedding pipelines, use the `token-rechunk` tool after extraction to ensure exact token counts. See [Token Re-chunking Guide](token-rechunking.md).
+
+## Token-Aware Strategies
+
+For precise token control, use the token-aware family of strategies. These use actual tokenizer output (embeddinggemma-300m by default) rather than word counts.
+
+The `small_to_big` strategy creates two levels of chunks. Child chunks (smaller, more focused) are used for vector search, while parent chunks (broader context) are retrieved after a match. This is useful for RAG systems where you want precise matching but rich context.
+
+### CLI Examples
+
+```bash
+# Token-aware for embedding optimization
+extract document.epub --chunking-strategy token_aware --target-tokens 400
+
+# Small-to-big for hierarchical retrieval
+extract document.epub --chunking-strategy small_to_big
+```
+
+### Python API
+
+```python
+from extraction.extractors import EpubExtractor
+
+extractor = EpubExtractor("book.epub", config={
+    'chunking_strategy': 'token_aware',
+    'target_tokens': 400,
+    'min_tokens': 256,
+    'max_tokens': 512,
+})
+extractor.load()
+extractor.parse()
+chunks = extractor.chunks
+```
 
 ## Troubleshooting
 
@@ -319,5 +357,6 @@ extract corpus/ -r --output-dir custom_chunks/ \
 ## Next Steps
 
 - For token-based chunking (production embeddings), see [Token Re-chunking Guide](token-rechunking.md)
+- For understanding token-aware strategies in depth, see [Chunking Strategies Explanation](../explanation/chunking-strategies.md#token-aware-strategies)
 - For vector database integration, see [Vector Database Tutorial](../getting-started/vector-db.md)
 - For custom analyzers, see [Custom Analyzers Guide](custom-analyzers.md)

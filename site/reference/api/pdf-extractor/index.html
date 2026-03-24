@@ -18,14 +18,14 @@
         <link rel="prev" href="../epub-extractor/">
       
       
-        <link rel="next" href="../html-extractor/">
+        <link rel="next" href="../mupdf-pdf-extractor/">
       
       
         
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -739,6 +739,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../how-to/annotation-workflow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Annotation Workflow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../how-to/quality-flags/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Working with Quality Flags
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -875,6 +931,90 @@
     
   
     extract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/annotation-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Annotation Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/corpus-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Corpus Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/utility-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utility Tools
   
 
     
@@ -1098,10 +1238,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#mupdf-pdf-extractor" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        MuPDF PDF Extractor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pdfextractor-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PdfExtractor Overview
       
     </span>
   </a>
@@ -1635,6 +1786,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../mupdf-pdf-extractor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MuPdfPdfExtractor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../html-extractor/" class="md-nav__link">
         
   
@@ -1893,6 +2072,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../explanation/native-pdf-parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Native PDF Parser
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2038,10 +2245,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#mupdf-pdf-extractor" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        MuPDF PDF Extractor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pdfextractor-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PdfExtractor Overview
       
     </span>
   </a>
@@ -2587,7 +2805,19 @@
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">PdfExtractor</span><span class="p">(</span><span class="n">BaseExtractor</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Extracts text from PDF files page-by-page with font-based heading detection and optional OCR support.</p>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<h2 id="mupdf-pdf-extractor">MuPDF PDF Extractor<a class="headerlink" href="#mupdf-pdf-extractor" title="Permanent link">&para;</a></h2>
+<p>When the native Zig/MuPDF library is available, the CLI automatically uses <code>MuPdfPdfExtractor</code> instead of <code>PdfExtractor</code>. This provides:</p>
+<ul>
+<li><strong>Font-based heading detection</strong>: Uses font size statistics across the entire document to identify headings. Computes the modal (most common) font size as body text, then ranks larger sizes as heading levels.</li>
+<li><strong>Rich span metadata</strong>: Extracts per-span data including font name, size, bold/italic/mono flags, color, and bounding box.</li>
+<li><strong>Multi-level hierarchy</strong>: Produces nested heading levels (not just <code>level_1</code>) based on font size ranking.</li>
+<li><strong>Memory management</strong>: Configurable memory limits via <code>max_memory_mb</code>.</li>
+</ul>
+<p>The MuPDF extractor produces the same <code>Chunk</code> output as <code>PdfExtractor</code> but with better heading hierarchy for most documents.</p>
+<p><strong>Configuration</strong>: See <a href="../../configuration/#mupdfpdfextractorconfig">MuPdfPdfExtractorConfig</a>.</p>
+<p><strong>API Reference</strong>: See <a href="../mupdf-pdf-extractor/">MuPdfPdfExtractor</a>.</p>
+<hr />
+<h2 id="pdfextractor-overview">PdfExtractor Overview<a class="headerlink" href="#pdfextractor-overview" title="Permanent link">&para;</a></h2>
 <p><code>PdfExtractor</code> provides:</p>
 <ul>
 <li><strong>Page-by-page extraction</strong>: Processes PDF pages sequentially</li>
@@ -3070,8 +3300,8 @@
 <h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h2>
 <h3 id="current-limitations">Current Limitations<a class="headerlink" href="#current-limitations" title="Permanent link">&para;</a></h3>
 <ol>
-<li><strong>Heading detection</strong>: Only heuristic-based (no font size analysis yet)</li>
-<li><strong>Single-level hierarchy</strong>: Only <code>level_1</code> populated (no nested headings)</li>
+<li><strong>Heading detection</strong>: Only heuristic-based (no font size analysis yet). Use <a href="../mupdf-pdf-extractor/">MuPdfPdfExtractor</a> for font-size-based detection.</li>
+<li><strong>Single-level hierarchy</strong>: Only <code>level_1</code> populated (no nested headings). MuPdfPdfExtractor resolves this when the native library is available.</li>
 <li><strong>Paragraph splitting</strong>: Simple double-newline split (may miss some paragraphs)</li>
 <li><strong>OCR</strong>: Experimental, not fully implemented</li>
 <li><strong>No layout analysis</strong>: Columns, tables, figures not detected</li>
@@ -3079,13 +3309,15 @@
 <h3 id="future-enhancements">Future Enhancements<a class="headerlink" href="#future-enhancements" title="Permanent link">&para;</a></h3>
 <p>Planned improvements:</p>
 <ul>
-<li>Font-size-based heading detection</li>
-<li>Multi-level hierarchy (h1-h6 equivalent)</li>
 <li>Layout analysis (columns, tables)</li>
 <li>Figure/image extraction</li>
 <li>Table-of-contents extraction</li>
 <li>Full OCR implementation</li>
 </ul>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Font-size-based heading detection and multi-level hierarchy are already available via <a href="../mupdf-pdf-extractor/">MuPdfPdfExtractor</a>.</p>
+</div>
 <h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h2>
 <h3 id="typical-performance">Typical Performance<a class="headerlink" href="#typical-performance" title="Permanent link">&para;</a></h3>
 <ul>
@@ -3120,7 +3352,7 @@
 <tr>
 <td><strong>Hierarchy</strong></td>
 <td>Multi-level (6 levels)</td>
-<td>Single-level (level_1 only)</td>
+<td>Single-level (level_1 only); multi-level with <a href="../mupdf-pdf-extractor/">MuPdfPdfExtractor</a></td>
 </tr>
 <tr>
 <td><strong>TOC</strong></td>
@@ -3152,6 +3384,7 @@
 <p><strong>Recommendation</strong>: Use EPUB when available. PDF is a fallback for documents only available as PDF.</p>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
+<li><a href="../mupdf-pdf-extractor/">MuPdfPdfExtractor API</a> - Native MuPDF-based extractor with font analysis</li>
 <li><a href="../base-extractor/">BaseExtractor API</a> - Parent class reference</li>
 <li><a href="../../configuration/#pdfextractorconfig">Configuration Reference</a> - Full config options</li>
 <li><a href="../../output-schema/">Output Schema Reference</a> - Understanding chunk output</li>

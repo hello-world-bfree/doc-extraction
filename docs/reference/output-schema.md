@@ -192,10 +192,64 @@ List of text chunks (paragraphs or merged chunks depending on chunking strategy)
 |-------|------|--------------|-------------|
 | `footnote_citations` | `object` | EPUB (if footnotes detected) | Footnote citation metadata (see below) |
 | `resolved_footnotes` | `object` | EPUB (future feature) | Resolved footnote text |
-| `ocr` | `boolean` | PDF (if OCR used) | Whether chunk was OCR'd |
-| `ocr_conf` | `number` | PDF (if OCR used) | OCR confidence (0.0 - 1.0) |
 | `merged_paragraph_ids` | `array[int]` | RAG strategy | IDs of paragraphs merged into this chunk |
 | `source_paragraph_count` | `integer` | RAG strategy | Number of source paragraphs merged |
+
+### OCR Fields
+
+Present on chunks extracted via optical character recognition (PDF extractor).
+
+| Field | Type | When Present | Description |
+|-------|------|--------------|-------------|
+| `ocr` | `boolean` | PDF (if OCR used) | Whether this chunk was extracted via OCR |
+| `ocr_conf` | `number` | PDF (if OCR used) | OCR confidence score (0.0 - 1.0) |
+
+### Quality Flags
+
+Soft quality markers applied during extraction. These flag quality-relevant conditions without removing content.
+
+| Field | Type | When Present | Description |
+|-------|------|--------------|-------------|
+| `quality_flags` | `array[string]` | When chunk has quality-relevant conditions | Quality markers (e.g., `"below_rag_minimum"`, `"likely_noncore_matter_dedication_phrase"`, `"contains_reference_block_5_refs"`) |
+
+```json
+{
+  "stable_id": "a1b2c3...",
+  "text": "Short paragraph here.",
+  "word_count": 15,
+  "quality_flags": ["below_rag_minimum"],
+  "hierarchy": {"level_1": "Chapter One"}
+}
+```
+
+### Token-Aware Strategy Fields
+
+Present when using token-aware chunking strategies (`token_aware`, `technical`, `small_to_big`).
+
+| Field | Type | When Present | Description |
+|-------|------|--------------|-------------|
+| `content_type` | `string` | Token-aware strategies | Content type for embedding optimization (e.g., `"prose"`, `"code"`, `"table"`) |
+| `overlap_token_count` | `integer` | Token-aware strategies (if overlap configured) | Number of overlap tokens from the previous chunk |
+| `context_prefix` | `string` | Token-aware strategies (if hierarchy context enabled) | Hierarchy context prefix prepended for embedding |
+
+### Small-to-Big Retrieval Fields
+
+The `parent_chunk_id`, `child_chunk_ids`, and `chunk_level` fields support small-to-big retrieval patterns where smaller chunks are used for precise matching and parent chunks provide broader context.
+
+| Field | Type | When Present | Description |
+|-------|------|--------------|-------------|
+| `parent_chunk_id` | `string` | `small_to_big` strategy (child chunks) | Parent chunk `stable_id` for navigating to broader context |
+| `child_chunk_ids` | `array[string]` | `small_to_big` strategy (parent chunks) | Child chunk `stable_id` values for navigating to finer detail |
+| `chunk_level` | `string` | `small_to_big` strategy | Chunk granularity level (e.g., `"parent"`, `"child"`) |
+
+### HyDE Question Generation
+
+| Field | Type | When Present | Description |
+|-------|------|--------------|-------------|
+| `hypothetical_questions` | `array[string]` | When HyDE question generation is enabled | Generated questions representing queries this chunk could answer |
+
+!!! note "Optional fields and output"
+    All optional chunk fields default to `null`. The `to_dict()` method on `Chunk` strips `None` values, so these fields only appear in JSON output when they have a value.
 
 ### Hierarchy Object
 
@@ -446,8 +500,12 @@ Full output for a small document:
 
 | Version | Date | Changes |
 |---------|------|---------|
-| `2025-09-08` | Current | Added chunking strategy metadata (`merged_paragraph_ids`, `source_paragraph_count`) |
-| `2024-12-01` | Previous | Initial unified schema |
+| v2.8 | Current | Added HyDE question generation (`hypothetical_questions`) |
+| v2.7 | | Added small-to-big retrieval fields (`parent_chunk_id`, `child_chunk_ids`, `chunk_level`) |
+| v2.6 | | Added token-aware strategy fields (`content_type`, `overlap_token_count`, `context_prefix`) |
+| v2.5 | | Added quality flags (`quality_flags`), OCR fields (`ocr`, `ocr_conf`) |
+| `2025-09-08` | | Added chunking strategy metadata (`merged_paragraph_ids`, `source_paragraph_count`) |
+| `2024-12-01` | | Initial unified schema |
 
 ---
 

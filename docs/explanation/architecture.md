@@ -97,7 +97,7 @@ These functions maintain the 6-level heading hierarchy that flows through docume
 
 **strategies.py** - Chunking strategies
 
-Implements the RAG vs NLP chunking algorithms (see [Chunking Strategies](chunking-strategies.md) for details):
+Implements the chunking algorithms (see [Chunking Strategies](chunking-strategies.md) for details):
 
 ```python
 class SemanticChunkingStrategy(ChunkingStrategy):
@@ -106,6 +106,12 @@ class SemanticChunkingStrategy(ChunkingStrategy):
 class ParagraphChunkingStrategy(ChunkingStrategy):
     """NLP mode: Preserve paragraph boundaries."""
 ```
+
+Additional token-aware strategies use `TokenChunkConfig` with an actual tokenizer (embeddinggemma-300m):
+
+- **`token_aware`**: Token-optimized chunks for embedding models
+- **`technical`**: Preserves code blocks and technical structure
+- **`small_to_big`**: Hierarchical chunks for parent-child retrieval
 
 Strategies are pluggable - extractors apply them to raw paragraphs after parsing.
 
@@ -285,6 +291,10 @@ class PdfExtractor(BaseExtractor):
                 else:
                     self._add_paragraph(box.text)
 ```
+
+**MuPdfPdfExtractor** - High-performance PDF extraction
+
+Uses a native Zig/MuPDF shared library for PDF text extraction with font metadata (spans, sizes, bold/italic/mono flags). Auto-selected when the native library is available, falls back to `PdfExtractor` (pdfplumber) otherwise. Font statistics drive heading detection rather than simple size thresholds. See [Native PDF Parser](native-pdf-parser.md).
 
 **HtmlExtractor** - HTML documents
 
@@ -481,6 +491,21 @@ print(metadata.document_type)  # "Case Law"
 print(metadata.subjects)       # ["Contract Law", "Tort"]
 ```
 
+## Tools Layer
+
+Beyond the core extraction pipeline, the library includes interactive tools for data quality and dataset building:
+
+- **Annotation TUI** (`tools/annotate/`): Textual-based app for labeling chunk quality with active learning
+- **Capture TUI** (`tools/capture/`): Textual-based app for selecting and reviewing chunks
+- **Corpus Builder** (`tools/corpus_builder.py`): Aggregates labeled chunks into JSONL datasets
+- **Training Builder** (`tools/training_builder.py`): Creates ML training datasets with stratified splits
+- **Token Re-chunker** (`tools/token_rechunker.py`): Transforms word-based chunks into token-optimized output
+- **Fix Hierarchy** (`tools/fix_hierarchy.py`): Repairs heading hierarchy in extraction outputs
+
+### ML Chunk Classifier
+
+The library includes a LightGBM-based chunk quality classifier (`src/extraction/ml/`), trained from annotation data produced by the Annotation TUI. This classifier can automatically predict chunk quality labels, reducing manual review effort.
+
 ## Data Flow
 
 Here's how a document flows through the three layers:
@@ -600,6 +625,18 @@ Each extractor implements its own RAG/NLP chunking. Problems:
 - One implementation of RAG chunking works for all formats
 - Adding a new strategy is one new class
 - Can test strategies independently of extractors
+
+### Configuration Loading
+
+Runtime configuration merges from five sources (highest priority first):
+
+1. **CLI flags**: `--min-chunk-words 200`
+2. **Project config**: `./extraction.toml`
+3. **pyproject.toml**: `[tool.extraction]` section
+4. **User config**: `~/.config/extraction/config.toml`
+5. **Built-in defaults**
+
+Each extractor has a typed dataclass config (`BaseExtractorConfig` and format-specific subclasses like `EpubExtractorConfig`, `PdfExtractorConfig`, `MuPdfPdfExtractorConfig`). Validation runs in `__post_init__`.
 
 ## Chunk Lifecycle
 

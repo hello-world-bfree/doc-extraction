@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -931,6 +931,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="how-to/annotation-workflow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Annotation Workflow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="how-to/quality-flags/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Working with Quality Flags
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1061,6 +1117,90 @@
     
   
     extract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/cli/annotation-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Annotation Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/cli/corpus-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Corpus Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/cli/utility-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utility Tools
   
 
     
@@ -1207,6 +1347,34 @@
     
   
     PdfExtractor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/api/mupdf-pdf-extractor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MuPdfPdfExtractor
   
 
     
@@ -1472,6 +1640,34 @@
     
   
     Chunking Strategies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="explanation/native-pdf-parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Native PDF Parser
   
 
     
@@ -1812,18 +2008,28 @@
 <hr />
 <p>Three-layer architecture: Extractors → Analyzers → Output. Extend with custom analyzers for domain-specific enrichment.</p>
 </li>
+<li>
+<p>:material-tools:{ .lg .middle } <strong>Data Quality Tools</strong></p>
+<hr />
+<p>Interactive TUI for annotation, corpus building, and ML training dataset generation. Label chunks, build corpora, train classifiers.</p>
+</li>
+<li>
+<p>:material-speedometer:{ .lg .middle } <strong>Native PDF Parser</strong></p>
+<hr />
+<p>Optional Zig/MuPDF backend for high-performance PDF extraction with font-based heading detection and multi-level hierarchy.</p>
+</li>
 </ul>
 </div>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <p>Install with <code>uv</code> (recommended) or <code>pip</code>:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Basic installation</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>extraction-library
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>doc-extraction
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># With PDF support</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;extraction-library[pdf]&quot;</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;doc-extraction[pdf]&quot;</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># Development installation</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/freeman-murray/extraction.git
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/hello-world-bfree/extraction.git
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="nb">cd</span><span class="w"> </span>extraction
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[dev]&quot;</span>
 </span></code></pre></div>
@@ -1854,7 +2060,7 @@
 </span></code></pre></div>
 <h2 id="key-features">Key Features<a class="headerlink" href="#key-features" title="Permanent link">&para;</a></h2>
 <h3 id="chunking-strategies">Chunking Strategies<a class="headerlink" href="#chunking-strategies" title="Permanent link">&para;</a></h3>
-<p>Choose between <strong>RAG mode</strong> (semantic chunks, 100-500 words) or <strong>NLP mode</strong> (paragraph-level chunks) across all formats:</p>
+<p>Choose between <strong>RAG mode</strong> (semantic chunks, 100-500 words), <strong>NLP mode</strong> (paragraph-level chunks), or <strong>token-aware mode</strong> (token-optimized for embedding models) across all formats:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># RAG mode (default): Optimal for vector databases</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>extract<span class="w"> </span>document.pdf<span class="w"> </span>--chunking-strategy<span class="w"> </span>rag
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
@@ -1972,6 +2178,11 @@
 <hr />
 <p>Complete API documentation</p>
 </li>
+<li>
+<p>:material-tag-check:{ .lg .middle } <strong><a href="how-to/annotation-workflow/">Annotation Workflow</a></strong></p>
+<hr />
+<p>Label chunk quality and build training datasets</p>
+</li>
 </ul>
 </div>
 <h2 id="philosophy">Philosophy<a class="headerlink" href="#philosophy" title="Permanent link">&para;</a></h2>
@@ -1988,7 +2199,7 @@
 <li><code>uv</code> recommended for package management</li>
 </ul>
 <h2 id="license">License<a class="headerlink" href="#license" title="Permanent link">&para;</a></h2>
-<p>MIT License - see <a href="https://github.com/freeman-murray/extraction/blob/master/LICENSE">LICENSE</a> for details.</p>
+<p>MIT License - see <a href="https://github.com/hello-world-bfree/extraction/blob/master/LICENSE">LICENSE</a> for details.</p>
 
 
 

@@ -14,7 +14,24 @@ class PdfExtractor(BaseExtractor)
 
 Extracts text from PDF files page-by-page with font-based heading detection and optional OCR support.
 
-## Overview
+## MuPDF PDF Extractor
+
+When the native Zig/MuPDF library is available, the CLI automatically uses `MuPdfPdfExtractor` instead of `PdfExtractor`. This provides:
+
+- **Font-based heading detection**: Uses font size statistics across the entire document to identify headings. Computes the modal (most common) font size as body text, then ranks larger sizes as heading levels.
+- **Rich span metadata**: Extracts per-span data including font name, size, bold/italic/mono flags, color, and bounding box.
+- **Multi-level hierarchy**: Produces nested heading levels (not just `level_1`) based on font size ranking.
+- **Memory management**: Configurable memory limits via `max_memory_mb`.
+
+The MuPDF extractor produces the same `Chunk` output as `PdfExtractor` but with better heading hierarchy for most documents.
+
+**Configuration**: See [MuPdfPdfExtractorConfig](../configuration.md#mupdfpdfextractorconfig).
+
+**API Reference**: See [MuPdfPdfExtractor](mupdf-pdf-extractor.md).
+
+---
+
+## PdfExtractor Overview
 
 `PdfExtractor` provides:
 
@@ -451,8 +468,8 @@ except ParseError as e:
 
 ### Current Limitations
 
-1. **Heading detection**: Only heuristic-based (no font size analysis yet)
-2. **Single-level hierarchy**: Only `level_1` populated (no nested headings)
+1. **Heading detection**: Only heuristic-based (no font size analysis yet). Use [MuPdfPdfExtractor](mupdf-pdf-extractor.md) for font-size-based detection.
+2. **Single-level hierarchy**: Only `level_1` populated (no nested headings). MuPdfPdfExtractor resolves this when the native library is available.
 3. **Paragraph splitting**: Simple double-newline split (may miss some paragraphs)
 4. **OCR**: Experimental, not fully implemented
 5. **No layout analysis**: Columns, tables, figures not detected
@@ -461,12 +478,13 @@ except ParseError as e:
 
 Planned improvements:
 
-- Font-size-based heading detection
-- Multi-level hierarchy (h1-h6 equivalent)
 - Layout analysis (columns, tables)
 - Figure/image extraction
 - Table-of-contents extraction
 - Full OCR implementation
+
+!!! tip
+    Font-size-based heading detection and multi-level hierarchy are already available via [MuPdfPdfExtractor](mupdf-pdf-extractor.md).
 
 ## Performance
 
@@ -494,7 +512,7 @@ Planned improvements:
 
 | Feature | EPUB | PDF |
 |---------|------|-----|
-| **Hierarchy** | Multi-level (6 levels) | Single-level (level_1 only) |
+| **Hierarchy** | Multi-level (6 levels) | Single-level (level_1 only); multi-level with [MuPdfPdfExtractor](mupdf-pdf-extractor.md) |
 | **TOC** | Automatic TOC mapping | No TOC |
 | **Formatting** | Preserves HTML structure | Plain text only |
 | **Headings** | `<h1>` - `<h6>` tags | Heuristic detection |
@@ -505,6 +523,7 @@ Planned improvements:
 
 ## See Also
 
+- [MuPdfPdfExtractor API](mupdf-pdf-extractor.md) - Native MuPDF-based extractor with font analysis
 - [BaseExtractor API](base-extractor.md) - Parent class reference
 - [Configuration Reference](../configuration.md#pdfextractorconfig) - Full config options
 - [Output Schema Reference](../output-schema.md) - Understanding chunk output

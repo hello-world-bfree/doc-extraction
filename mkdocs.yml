@@ -81,13 +81,19 @@ nav:
     - Custom Analyzers: how-to/custom-analyzers.md
     - Debugging Extraction: how-to/debugging.md
     - Token Rechunking: how-to/token-rechunking.md
+    - Annotation Workflow: how-to/annotation-workflow.md
+    - Working with Quality Flags: how-to/quality-flags.md
   - Reference:
     - CLI:
       - extract: reference/cli/extract.md
+      - Annotation Tools: reference/cli/annotation-tools.md
+      - Corpus Tools: reference/cli/corpus-tools.md
+      - Utility Tools: reference/cli/utility-tools.md
     - API:
       - BaseExtractor: reference/api/base-extractor.md
       - EpubExtractor: reference/api/epub-extractor.md
       - PdfExtractor: reference/api/pdf-extractor.md
+      - MuPdfPdfExtractor: reference/api/mupdf-pdf-extractor.md
       - HtmlExtractor: reference/api/html-extractor.md
       - MarkdownExtractor: reference/api/markdown-extractor.md
       - JsonExtractor: reference/api/json-extractor.md
@@ -96,6 +102,7 @@ nav:
   - Explanation:
     - Architecture: explanation/architecture.md
     - Chunking Strategies: explanation/chunking-strategies.md
+    - Native PDF Parser: explanation/native-pdf-parser.md
   - Examples:
     - Vector DB Integration: examples/vector-db-integration.md
 

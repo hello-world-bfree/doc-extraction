@@ -10,10 +10,11 @@ REDBOOK_PDF = FIXTURES / "redbook-5th-edition.pdf"
 try:
     from extraction._native.mupdf._bindings import get_lib
     from extraction._native.mupdf import MuPdfDocument, MuPdfPage, SpanData, OutlineEntry
-    from extraction.extractors.pdf_mupdf import MuPdfPdfExtractor, NATIVE_AVAILABLE
+    from extraction.extractors.pdf_mupdf import MuPdfPdfExtractor
     from extraction.extractors.configs import MuPdfPdfExtractorConfig
     from extraction.analyzers.generic import GenericAnalyzer
-    SKIP = not NATIVE_AVAILABLE
+    get_lib()
+    SKIP = False
 except Exception:
     SKIP = True
 

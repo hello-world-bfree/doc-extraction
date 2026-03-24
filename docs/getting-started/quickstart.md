@@ -37,6 +37,31 @@ Install the extraction library using `uv` (recommended) or `pip`:
 !!! tip "Why uv?"
     `uv` is significantly faster than pip and handles dependency resolution better. It's the recommended way to install Python packages in 2024+.
 
+### Optional Extras
+
+```bash
+uv pip install -e ".[images]"         # Image scraping + EPUB builder
+uv pip install -e ".[finetuning]"     # Token re-chunking tools
+uv pip install -e ".[annotation]"     # Annotation TUI
+uv pip install -e ".[capture]"        # Capture TUI
+```
+
+## What's Included
+
+The library provides these CLI tools:
+
+| Tool | Purpose |
+|------|---------|
+| `extract` | Extract chunks from documents (EPUB, PDF, HTML, Markdown, JSON) |
+| `annotate-chunks` | Interactive TUI for labeling chunk quality |
+| `capture-chunks` | Interactive TUI for selecting and reviewing chunks |
+| `corpus-builder` | Build JSONL datasets from annotations |
+| `training-builder` | Build ML training datasets with train/test splits |
+| `token-rechunk` | Optimize chunks for embedding model token limits |
+| `fix-hierarchy` | Repair heading hierarchy in extraction outputs |
+| `vatican-extract` | Vatican archive document pipeline |
+| `extract-images` | Scrape images and create EPUB galleries |
+
 ## Your First Extraction (CLI)
 
 The fastest way to extract a document is using the CLI:
@@ -299,6 +324,12 @@ extract book.epub --preserve-hierarchy
     ---
 
     Complete API documentation
+
+-   :material-tag-check:{ .lg .middle } **[Annotation Workflow](../how-to/annotation-workflow.md)**
+
+    ---
+
+    Label chunk quality and build training datasets
 
 </div>
 
