@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -931,6 +931,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="how-to/annotation-workflow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Annotation Workflow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="how-to/quality-flags/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Working with Quality Flags
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1061,6 +1117,90 @@
     
   
     extract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/cli/annotation-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Annotation Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/cli/corpus-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Corpus Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/cli/utility-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utility Tools
   
 
     
@@ -1207,6 +1347,34 @@
     
   
     PdfExtractor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/api/mupdf-pdf-extractor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MuPdfPdfExtractor
   
 
     
@@ -1472,6 +1640,34 @@
     
   
     Chunking Strategies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="explanation/native-pdf-parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Native PDF Parser
   
 
     
@@ -1812,6 +2008,16 @@
 <hr />
 <p>Three-layer architecture: Extractors → Analyzers → Output. Extend with custom analyzers for domain-specific enrichment.</p>
 </li>
+<li>
+<p>:material-tools:{ .lg .middle } <strong>Data Quality Tools</strong></p>
+<hr />
+<p>Interactive TUI for annotation, corpus building, and ML training dataset generation. Label chunks, build corpora, train classifiers.</p>
+</li>
+<li>
+<p>:material-speedometer:{ .lg .middle } <strong>Native PDF Parser</strong></p>
+<hr />
+<p>Optional Zig/MuPDF backend for high-performance PDF extraction with font-based heading detection and multi-level hierarchy.</p>
+</li>
 </ul>
 </div>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
@@ -1854,7 +2060,7 @@
 </span></code></pre></div>
 <h2 id="key-features">Key Features<a class="headerlink" href="#key-features" title="Permanent link">&para;</a></h2>
 <h3 id="chunking-strategies">Chunking Strategies<a class="headerlink" href="#chunking-strategies" title="Permanent link">&para;</a></h3>
-<p>Choose between <strong>RAG mode</strong> (semantic chunks, 100-500 words) or <strong>NLP mode</strong> (paragraph-level chunks) across all formats:</p>
+<p>Choose between <strong>RAG mode</strong> (semantic chunks, 100-500 words), <strong>NLP mode</strong> (paragraph-level chunks), or <strong>token-aware mode</strong> (token-optimized for embedding models) across all formats:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># RAG mode (default): Optimal for vector databases</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>extract<span class="w"> </span>document.pdf<span class="w"> </span>--chunking-strategy<span class="w"> </span>rag
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
@@ -1971,6 +2177,11 @@
 <p>:material-book-open-page-variant:{ .lg .middle } <strong><a href="reference/api/base-extractor/">API Reference</a></strong></p>
 <hr />
 <p>Complete API documentation</p>
+</li>
+<li>
+<p>:material-tag-check:{ .lg .middle } <strong><a href="how-to/annotation-workflow/">Annotation Workflow</a></strong></p>
+<hr />
+<p>Label chunk quality and build training datasets</p>
 </li>
 </ul>
 </div>

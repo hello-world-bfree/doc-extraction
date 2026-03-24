@@ -12,13 +12,13 @@
         <meta name="author" content="Freeman Murray">
       
       
-        <link rel="canonical" href="https://freeman-murray.github.io/extraction/reference/cli/extract/">
+        <link rel="canonical" href="https://freeman-murray.github.io/extraction/reference/cli/utility-tools/">
       
       
-        <link rel="prev" href="../../../how-to/quality-flags/">
+        <link rel="prev" href="../corpus-tools/">
       
       
-        <link rel="next" href="../annotation-tools/">
+        <link rel="next" href="../../api/base-extractor/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>extract - Extraction Library</title>
+        <title>Utility Tools - Extraction Library</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#cli-reference-extract" class="md-skip">
+        <a href="#utility-tools" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              extract
+              Utility Tools
             
           </span>
         </div>
@@ -301,7 +301,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+        <a href="../extract/" class="md-tabs__link">
           
   
   
@@ -920,37 +920,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    extract
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../extract/" class="md-nav__link">
         
   
   
@@ -966,507 +939,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#synopsis" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Synopsis
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#description" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Description
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#arguments" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Arguments
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Arguments">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#positional-arguments" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Positional Arguments
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Options
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Options">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#config-management" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Config Management
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#inputoutput-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Input/Output Options
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#batch-processing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Batch Processing
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#domain-analysis" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Domain Analysis
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#extraction-options-epub-specific" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Extraction Options (EPUB-specific)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#visual-hierarchy-epub" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Visual Hierarchy (EPUB)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#frontback-matter-epub" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Front/Back Matter (EPUB)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#chunking-strategy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Chunking Strategy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#token-aware-strategy-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Token-Aware Strategy Options
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#logging" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Logging
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#exit-codes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Exit Codes
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#output-files" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Output Files
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Examples
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Examples">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#single-file-processing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Single File Processing
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#batch-processing_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Batch Processing
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#domain-specific-analysis" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Domain-Specific Analysis
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#custom-chunking" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Custom Chunking
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#token-aware-chunking" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Token-Aware Chunking
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#frontback-matter-detection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Front/Back Matter Detection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#debugging" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Debugging
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#chunking-strategies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Chunking Strategies
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Chunking Strategies">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#rag-strategy-default" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RAG Strategy (Default)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#nlp-strategy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        NLP Strategy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#token-aware-strategy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Token-Aware Strategy
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#tiny-chunk-filtering" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tiny Chunk Filtering
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Tiny Chunk Filtering">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#conservative-default" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Conservative (Default)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#standard" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Standard
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#aggressive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Aggressive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#disabled" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Disabled
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#noise-filtering" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Noise Filtering
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#format-detection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Format Detection
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#environment-variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Environment Variables
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration-files" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration Files
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#quality-routing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quality Routing
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        See Also
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1532,10 +1004,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../utility-tools/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utility Tools
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1551,6 +1050,447 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#fix-hierarchy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        fix-hierarchy
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="fix-hierarchy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#synopsis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Synopsis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#description" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Description
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#vatican-extract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        vatican-extract
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="vatican-extract">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#synopsis_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Synopsis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#description_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Description
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#working-directory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Working Directory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pipeline-stages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pipeline Stages
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cloud-upload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cloud Upload
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filtering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filtering
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cleanup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logging
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available-sections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Available Sections
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extract-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        extract-images
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="extract-images">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#synopsis_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Synopsis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#description_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Description
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#inputoutput" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Input/Output
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scraper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scraper
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#epub-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        EPUB Metadata
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#image-filtering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image Filtering
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s3-upload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3 Upload
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#token-rechunk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        token-rechunk
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="token-rechunk">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#synopsis_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Synopsis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#description_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Description
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Modes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2149,6 +2089,18 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#fix-hierarchy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        fix-hierarchy
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="fix-hierarchy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#synopsis" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2158,8 +2110,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#description" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2169,24 +2121,23 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#arguments" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Arguments
+        Options
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Arguments">
-      <ul class="md-nav__list">
+</li>
         
           <li class="md-nav__item">
-  <a href="#positional-arguments" class="md-nav__link">
+  <a href="#examples" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Positional Arguments
+        Examples
       
     </span>
   </a>
@@ -2199,7 +2150,41 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#options" class="md-nav__link">
+  <a href="#vatican-extract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        vatican-extract
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="vatican-extract">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#synopsis_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Synopsis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#description_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Description
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Options
@@ -2211,10 +2196,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#config-management" class="md-nav__link">
+  <a href="#working-directory" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Config Management
+        Working Directory
       
     </span>
   </a>
@@ -2222,10 +2207,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#inputoutput-options" class="md-nav__link">
+  <a href="#pipeline-stages" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Input/Output Options
+        Pipeline Stages
       
     </span>
   </a>
@@ -2233,10 +2218,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#batch-processing" class="md-nav__link">
+  <a href="#cloud-upload" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Batch Processing
+        Cloud Upload
       
     </span>
   </a>
@@ -2244,10 +2229,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#domain-analysis" class="md-nav__link">
+  <a href="#filtering" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Domain Analysis
+        Filtering
       
     </span>
   </a>
@@ -2255,10 +2240,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#extraction-options-epub-specific" class="md-nav__link">
+  <a href="#performance" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Extraction Options (EPUB-specific)
+        Performance
       
     </span>
   </a>
@@ -2266,43 +2251,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#visual-hierarchy-epub" class="md-nav__link">
+  <a href="#cleanup" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Visual Hierarchy (EPUB)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#frontback-matter-epub" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Front/Back Matter (EPUB)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#chunking-strategy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Chunking Strategy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#token-aware-strategy-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Token-Aware Strategy Options
+        Cleanup
       
     </span>
   </a>
@@ -2324,31 +2276,20 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#exit-codes" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#available-sections" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Exit Codes
+        Available Sections
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#output-files" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Output Files
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#examples_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Examples
@@ -2356,14 +2297,30 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Examples">
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extract-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        extract-images
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="extract-images">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#single-file-processing" class="md-nav__link">
+  <a href="#synopsis_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Single File Processing
+        Synopsis
       
     </span>
   </a>
@@ -2371,10 +2328,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#batch-processing_1" class="md-nav__link">
+  <a href="#description_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Batch Processing
+        Description
       
     </span>
   </a>
@@ -2382,10 +2339,22 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#domain-specific-analysis" class="md-nav__link">
+  <a href="#options_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Domain-Specific Analysis
+        Options
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#inputoutput" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Input/Output
       
     </span>
   </a>
@@ -2393,10 +2362,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#custom-chunking" class="md-nav__link">
+  <a href="#scraper" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Custom Chunking
+        Scraper
       
     </span>
   </a>
@@ -2404,10 +2373,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
+  <a href="#epub-metadata" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Configuration
+        EPUB Metadata
       
     </span>
   </a>
@@ -2415,10 +2384,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#token-aware-chunking" class="md-nav__link">
+  <a href="#image-filtering" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Token-Aware Chunking
+        Image Filtering
       
     </span>
   </a>
@@ -2426,21 +2395,26 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#frontback-matter-detection" class="md-nav__link">
+  <a href="#s3-upload" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Front/Back Matter Detection
+        S3 Upload
       
     </span>
   </a>
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+        
           <li class="md-nav__item">
-  <a href="#debugging" class="md-nav__link">
+  <a href="#examples_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Debugging
+        Examples
       
     </span>
   </a>
@@ -2453,22 +2427,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#chunking-strategies" class="md-nav__link">
+  <a href="#token-rechunk" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Chunking Strategies
+        token-rechunk
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Chunking Strategies">
+    <nav class="md-nav" aria-label="token-rechunk">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#rag-strategy-default" class="md-nav__link">
+  <a href="#synopsis_3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        RAG Strategy (Default)
+        Synopsis
       
     </span>
   </a>
@@ -2476,10 +2450,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#nlp-strategy" class="md-nav__link">
+  <a href="#description_3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        NLP Strategy
+        Description
       
     </span>
   </a>
@@ -2487,10 +2461,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#token-aware-strategy" class="md-nav__link">
+  <a href="#modes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Token-Aware Strategy
+        Modes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
       
     </span>
   </a>
@@ -2499,122 +2495,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#tiny-chunk-filtering" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tiny Chunk Filtering
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Tiny Chunk Filtering">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#conservative-default" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Conservative (Default)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#standard" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Standard
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#aggressive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Aggressive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#disabled" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Disabled
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#noise-filtering" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Noise Filtering
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#format-detection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Format Detection
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#environment-variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Environment Variables
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration-files" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration Files
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#quality-routing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quality Routing
-      
-    </span>
-  </a>
   
 </li>
       
@@ -2649,62 +2529,23 @@
   
 
 
-<h1 id="cli-reference-extract">CLI Reference: <code>extract</code><a class="headerlink" href="#cli-reference-extract" title="Permanent link">&para;</a></h1>
-<p>Complete reference for the unified extraction CLI command.</p>
-<h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>extract<span class="w"> </span>PATH<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+<h1 id="utility-tools">Utility Tools<a class="headerlink" href="#utility-tools" title="Permanent link">&para;</a></h1>
+<p>Standalone tools for hierarchy repair, Vatican archive processing, image extraction, and token-based re-chunking. These complement the primary <a href="../extract/"><code>extract</code></a> command with specialized workflows.</p>
+<hr />
+<h2 id="fix-hierarchy"><code>fix-hierarchy</code><a class="headerlink" href="#fix-hierarchy" title="Permanent link">&para;</a></h2>
+<h3 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>fix-hierarchy<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>FILE
 </span></code></pre></div>
-<h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p>The <code>extract</code> command provides a unified interface for extracting structured data from multiple document formats (EPUB, PDF, HTML, Markdown, JSON). It automatically detects the document format, processes the content, and outputs JSON files with hierarchical chunks and rich metadata.</p>
-<p>The extractor supports:</p>
+<h3 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h3>
+<p>Repairs heading hierarchy levels in extraction JSON outputs without requiring re-extraction. When chunks were extracted with an incorrect <code>toc_hierarchy_level</code> config (e.g., old default of 3 instead of current default of 1), this tool shifts hierarchy levels down in-place, preserving all annotations and edits.</p>
+<p>The tool:</p>
 <ul>
-<li><strong>Single-file mode</strong>: Process one document and write outputs to current directory</li>
-<li><strong>Batch mode</strong>: Process all documents in a directory with optional recursion</li>
-<li><strong>Multiple formats</strong>: EPUB, PDF, HTML, Markdown, JSON</li>
-<li><strong>Domain analysis</strong>: Catholic-specific or generic metadata enrichment</li>
-<li><strong>Quality routing</strong>: Automatic quality scoring (routes A/B/C)</li>
-<li><strong>Chunking strategies</strong>: RAG-optimized, NLP paragraph-level, or token-aware chunking</li>
-<li><strong>Configuration files</strong>: Layered config from TOML files, <code>pyproject.toml</code>, and CLI flags</li>
+<li>Shifts hierarchy levels down by a specified amount (e.g., <code>level_3</code> becomes <code>level_2</code>)</li>
+<li>Preserves <code>level_1</code> (book title) by default</li>
+<li>Updates <code>hierarchy_depth</code> and <code>heading_path</code> fields to match</li>
+<li>Creates a <code>.json.backup</code> file before modifying</li>
 </ul>
-<h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
-<h3 id="positional-arguments">Positional Arguments<a class="headerlink" href="#positional-arguments" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Argument</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>PATH</code></td>
-<td>Path to document file or directory. If omitted, prompts user for input.</td>
-<td>Interactive prompt</td>
-</tr>
-</tbody>
-</table>
-<h2 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h2>
-<h3 id="config-management">Config Management<a class="headerlink" href="#config-management" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Option</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--show-config</code></td>
-<td>Show active configuration sources and merged values, then exit.</td>
-</tr>
-<tr>
-<td><code>--init-config</code></td>
-<td>Generate a sample <code>extraction.toml</code> in the current directory, then exit.</td>
-</tr>
-</tbody>
-</table>
-<h3 id="inputoutput-options">Input/Output Options<a class="headerlink" href="#inputoutput-options" title="Permanent link">&para;</a></h3>
+<h3 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -2715,171 +2556,47 @@
 </thead>
 <tbody>
 <tr>
-<td><code>-o, --output BASE</code></td>
-<td>Base name for output files (single-file mode only). If not specified, uses source filename.</td>
-<td>Source filename</td>
+<td><code>FILE</code></td>
+<td>Path to chunks JSON file.</td>
+<td>Required</td>
 </tr>
 <tr>
-<td><code>--output-dir DIR</code></td>
-<td>Directory to write outputs. Creates directory if it doesn't exist.</td>
-<td>Current directory</td>
-</tr>
-<tr>
-<td><code>--ndjson</code></td>
-<td>Also emit chunks as newline-delimited JSON (<code>.ndjson</code> file).</td>
-<td>Disabled</td>
-</tr>
-</tbody>
-</table>
-<h3 id="batch-processing">Batch Processing<a class="headerlink" href="#batch-processing" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Option</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>-r, --recursive</code></td>
-<td>When processing a directory, include subdirectories. Searches for all supported file extensions recursively.</td>
-<td>Non-recursive</td>
-</tr>
-</tbody>
-</table>
-<h3 id="domain-analysis">Domain Analysis<a class="headerlink" href="#domain-analysis" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Option</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--analyzer {catholic\|generic}</code></td>
-<td>Domain-specific metadata enrichment. <code>catholic</code>: Detects encyclicals, liturgical documents, etc. <code>generic</code>: Minimal enrichment.</td>
-<td><code>generic</code></td>
-</tr>
-</tbody>
-</table>
-<h3 id="extraction-options-epub-specific">Extraction Options (EPUB-specific)<a class="headerlink" href="#extraction-options-epub-specific" title="Permanent link">&para;</a></h3>
-<p>These options are maintained for backward compatibility with legacy EPUB parsers. Most are EPUB-specific but some apply to other formats.</p>
-<table>
-<thead>
-<tr>
-<th>Option</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--toc-level LEVEL</code></td>
-<td>Hierarchy level (1-6) where TOC titles are inserted. <code>1</code> = top-level, <code>6</code> = deepest.</td>
-<td><code>3</code></td>
-</tr>
-<tr>
-<td><code>--min-words WORDS</code></td>
-<td>Minimum words for paragraph inclusion. Paragraphs below this threshold are skipped.</td>
+<td><code>--shift-down N</code></td>
+<td>Number of levels to shift down. For example, <code>1</code> shifts <code>level_3</code> to <code>level_2</code>. Must be &gt;= 1.</td>
 <td><code>1</code></td>
 </tr>
 <tr>
-<td><code>--min-block-words WORDS</code></td>
-<td>Minimum words to chunk generic block tags (div, section, etc.).</td>
-<td><code>2</code></td>
+<td><code>--no-backup</code></td>
+<td>Do not create a backup file before modifying.</td>
+<td>Backup enabled</td>
 </tr>
 <tr>
-<td><code>--preserve-hierarchy</code></td>
-<td>Preserve heading hierarchy across EPUB spine documents. By default, hierarchy resets at document boundaries.</td>
-<td>Disabled</td>
-</tr>
-<tr>
-<td><code>--reset-depth DEPTH</code></td>
-<td>When hierarchy is <strong>not</strong> preserved, clear levels ≥ this depth (1-6) at document boundaries.</td>
-<td><code>2</code></td>
-</tr>
-<tr>
-<td><code>--deny-class REGEX</code></td>
-<td>Regex pattern for CSS classes to exclude (e.g., footnotes, calibre artifacts).</td>
-<td><code>^(?:calibre\d+\|note\|footnote)$</code></td>
-</tr>
-<tr>
-<td><code>--filter-tiny-chunks {off\|conservative\|standard\|aggressive}</code></td>
-<td>Filter tiny chunks (&lt;5 words) as noise. See <a href="#tiny-chunk-filtering">Tiny Chunk Filtering</a>.</td>
-<td><code>conservative</code></td>
-</tr>
-<tr>
-<td><code>--no-filter-noise</code></td>
-<td>Disable semantic noise filtering (index pages, reference lists, boilerplate). By default, noise filtering is <strong>enabled</strong> across all formats.</td>
-<td>Noise filtering enabled</td>
-</tr>
-<tr>
-<td><code>--filter-small-chunks</code></td>
-<td>Filter out chunks below <code>min_chunk_words</code> instead of preserving them with quality flags. Default behavior preserves small chunks with <code>quality_flags: ["below_rag_minimum"]</code>.</td>
+<td><code>--dry-run</code></td>
+<td>Show what would change without modifying the file.</td>
 <td>Disabled</td>
 </tr>
 </tbody>
 </table>
-<h3 id="visual-hierarchy-epub">Visual Hierarchy (EPUB)<a class="headerlink" href="#visual-hierarchy-epub" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Option</th>
-<th>Type</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--detect-visual-headings</code></td>
-<td>flag</td>
-<td><code>False</code></td>
-<td>Detect headings from inline font-size styles. EPUB only.</td>
-</tr>
-<tr>
-<td><code>--visual-heading-threshold RATIO</code></td>
-<td>float</td>
-<td><code>1.3</code></td>
-<td>Font-size multiplier threshold for visual heading detection (1.0-3.0). EPUB only.</td>
-</tr>
-</tbody>
-</table>
-<h3 id="frontback-matter-epub">Front/Back Matter (EPUB)<a class="headerlink" href="#frontback-matter-epub" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Option</th>
-<th>Type</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--detect-front-matter</code></td>
-<td>flag</td>
-<td><code>False</code></td>
-<td>Detect and flag common front/back matter sections (dedications, glossaries, indexes). EPUB only.</td>
-</tr>
-<tr>
-<td><code>--filter-front-matter</code></td>
-<td>flag</td>
-<td><code>False</code></td>
-<td>Hard filter detected front/back matter chunks. Requires <code>--detect-front-matter</code>.</td>
-</tr>
-<tr>
-<td><code>--detect-references</code></td>
-<td>flag</td>
-<td><code>False</code></td>
-<td>Detect and flag end-of-chapter reference/citation blocks. EPUB only.</td>
-</tr>
-</tbody>
-</table>
-<h3 id="chunking-strategy">Chunking Strategy<a class="headerlink" href="#chunking-strategy" title="Permanent link">&para;</a></h3>
+<h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
+<p>Preview changes without modifying:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>fix-hierarchy<span class="w"> </span>output.json<span class="w"> </span>--dry-run
+</span></code></pre></div>
+<p>Apply a one-level shift (creates backup automatically):</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>fix-hierarchy<span class="w"> </span>output.json<span class="w"> </span>--shift-down<span class="w"> </span><span class="m">1</span>
+</span></code></pre></div>
+<p>Shift two levels down without backup:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>fix-hierarchy<span class="w"> </span>output.json<span class="w"> </span>--shift-down<span class="w"> </span><span class="m">2</span><span class="w"> </span>--no-backup
+</span></code></pre></div>
+<hr />
+<h2 id="vatican-extract"><code>vatican-extract</code><a class="headerlink" href="#vatican-extract" title="Permanent link">&para;</a></h2>
+<h3 id="synopsis_1">Synopsis<a class="headerlink" href="#synopsis_1" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>vatican-extract<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</span></code></pre></div>
+<h3 id="description_1">Description<a class="headerlink" href="#description_1" title="Permanent link">&para;</a></h3>
+<p>Specialized pipeline for downloading and extracting English documents from the Vatican archive (vatican.va). Supports selective section processing, cloud upload to AWS S3 or Cloudflare R2, checkpoint-based resume for interrupted runs, and rate limiting.</p>
+<p>The pipeline stages are: <strong>discover</strong> (find documents on vatican.va), <strong>download</strong> (fetch HTML), <strong>process</strong> (extract and chunk), and optionally <strong>upload</strong> (push to cloud storage).</p>
+<h3 id="options_1">Options<a class="headerlink" href="#options_1" title="Permanent link">&para;</a></h3>
+<h4 id="working-directory">Working Directory<a class="headerlink" href="#working-directory" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
 <tr>
@@ -2890,73 +2607,120 @@
 </thead>
 <tbody>
 <tr>
-<td><code>--chunking-strategy {rag\|semantic\|embeddings\|nlp\|paragraph\|token_aware\|technical\|small_to_big}</code></td>
-<td>Chunking strategy. <code>rag</code>/<code>semantic</code>/<code>embeddings</code>: Merge paragraphs (100-500 words) for embeddings. <code>nlp</code>/<code>paragraph</code>: One paragraph per chunk. <code>token_aware</code>/<code>technical</code>/<code>small_to_big</code>: Token-level chunking with configurable tokenizer.</td>
-<td><code>rag</code></td>
-</tr>
-<tr>
-<td><code>--min-chunk-words WORDS</code></td>
-<td>Minimum words per chunk for RAG/semantic strategy.</td>
-<td><code>100</code></td>
-</tr>
-<tr>
-<td><code>--max-chunk-words WORDS</code></td>
-<td>Maximum words per chunk for RAG/semantic strategy.</td>
-<td><code>500</code></td>
+<td><code>--work-dir DIR</code></td>
+<td>Working directory for downloads and outputs.</td>
+<td><code>./vatican_archive</code></td>
 </tr>
 </tbody>
 </table>
-<h3 id="token-aware-strategy-options">Token-Aware Strategy Options<a class="headerlink" href="#token-aware-strategy-options" title="Permanent link">&para;</a></h3>
-<p>These options apply when using <code>--chunking-strategy token_aware</code>, <code>technical</code>, or <code>small_to_big</code>.</p>
+<h4 id="pipeline-stages">Pipeline Stages<a class="headerlink" href="#pipeline-stages" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
 <tr>
 <th>Option</th>
-<th>Type</th>
-<th>Default</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>--target-tokens</code></td>
-<td>int</td>
-<td><code>400</code></td>
-<td>Target tokens per chunk for <code>token_aware</code> strategy.</td>
+<td><code>--discover-only</code></td>
+<td>Only discover documents, don't download or process.</td>
 </tr>
 <tr>
-<td><code>--min-tokens</code></td>
-<td>int</td>
-<td><code>256</code></td>
-<td>Minimum tokens per chunk for <code>token_aware</code> strategy.</td>
+<td><code>--download-only</code></td>
+<td>Only download documents, don't process.</td>
 </tr>
 <tr>
-<td><code>--max-tokens</code></td>
-<td>int</td>
-<td><code>512</code></td>
-<td>Maximum tokens per chunk for <code>token_aware</code> strategy.</td>
+<td><code>--process-only</code></td>
+<td>Only process already-downloaded documents.</td>
 </tr>
 <tr>
-<td><code>--overlap-percent</code></td>
-<td>float</td>
-<td><code>0.10</code></td>
-<td>Overlap percentage between chunks for <code>token_aware</code> strategy.</td>
-</tr>
-<tr>
-<td><code>--code-max-tokens</code></td>
-<td>int</td>
-<td><code>256</code></td>
-<td>Maximum tokens for code blocks in <code>token_aware</code> strategy.</td>
-</tr>
-<tr>
-<td><code>--tokenizer-name</code></td>
-<td>str</td>
-<td><code>google/embeddinggemma-300m</code></td>
-<td>Tokenizer model name for <code>token_aware</code> strategy.</td>
+<td><code>--resume</code></td>
+<td>Resume interrupted extraction from checkpoint.</td>
 </tr>
 </tbody>
 </table>
-<h3 id="logging">Logging<a class="headerlink" href="#logging" title="Permanent link">&para;</a></h3>
+<h4 id="cloud-upload">Cloud Upload<a class="headerlink" href="#cloud-upload" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--upload</code></td>
+<td>Upload processed outputs to S3/R2. Requires environment variables (see below).</td>
+</tr>
+<tr>
+<td><code>--upload-to-r2</code></td>
+<td>Alias for <code>--upload</code>.</td>
+</tr>
+<tr>
+<td><code>--no-upload</code></td>
+<td>Skip upload even if cloud storage is configured.</td>
+</tr>
+</tbody>
+</table>
+<p>Cloud upload reads credentials from environment variables:</p>
+<p><strong>AWS S3</strong>: <code>AWS_ACCESS_KEY_ID</code> (or <code>S3_ACCESS_KEY_ID</code>), <code>AWS_SECRET_ACCESS_KEY</code> (or <code>S3_SECRET_ACCESS_KEY</code>), <code>S3_BUCKET_NAME</code>, <code>AWS_REGION</code> (optional, default: <code>us-east-1</code>).</p>
+<p><strong>Cloudflare R2</strong>: <code>R2_ACCESS_KEY_ID</code>, <code>R2_SECRET_ACCESS_KEY</code>, <code>R2_ENDPOINT_URL</code>, <code>R2_BUCKET_NAME</code>.</p>
+<h4 id="filtering">Filtering<a class="headerlink" href="#filtering" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--sections SECTION [SECTION ...]</code></td>
+<td>Only process specific sections (see available sections below).</td>
+<td>All sections</td>
+</tr>
+<tr>
+<td><code>--limit N</code></td>
+<td>Limit number of documents to process (for testing).</td>
+<td>Unlimited</td>
+</tr>
+</tbody>
+</table>
+<h4 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--rate-limit SECONDS</code></td>
+<td>Seconds between requests.</td>
+<td><code>1.0</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="cleanup">Cleanup<a class="headerlink" href="#cleanup" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--cleanup-downloads</code></td>
+<td>Remove local downloads after successful upload.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="logging">Logging<a class="headerlink" href="#logging" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
 <tr>
@@ -2968,297 +2732,365 @@
 <tbody>
 <tr>
 <td><code>-v, --verbose</code></td>
-<td>Enable verbose logging (DEBUG level). Shows detailed extraction steps.</td>
+<td>Verbose logging (DEBUG level).</td>
 <td>INFO level</td>
 </tr>
 <tr>
 <td><code>-q, --quiet</code></td>
-<td>Quiet logging (WARNING level only). Suppresses informational messages.</td>
+<td>Quiet mode (WARNING level only).</td>
 <td>INFO level</td>
 </tr>
-<tr>
-<td><code>--debug-dump</code></td>
-<td>Write debug information to <code>./debug/</code> directory (EPUB only). Includes spine structure, TOC, and per-document chunks.</td>
-<td>Disabled</td>
-</tr>
 </tbody>
 </table>
-<h2 id="exit-codes">Exit Codes<a class="headerlink" href="#exit-codes" title="Permanent link">&para;</a></h2>
+<h3 id="available-sections">Available Sections<a class="headerlink" href="#available-sections" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Code</th>
-<th>Meaning</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>0</code></td>
-<td>Success: All documents processed successfully</td>
-</tr>
-<tr>
-<td><code>1</code></td>
-<td>Partial failure: Some documents failed processing (batch mode) or single document failed</td>
-</tr>
-<tr>
-<td><code>2</code></td>
-<td>Invalid input: No path provided or path not found</td>
-</tr>
-</tbody>
-</table>
-<h2 id="output-files">Output Files<a class="headerlink" href="#output-files" title="Permanent link">&para;</a></h2>
-<p>For each processed document, the extractor creates the following files:</p>
-<table>
-<thead>
-<tr>
-<th>File</th>
+<th>Section</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>{base}.json</code></td>
-<td>Complete document data: metadata, chunks, extraction info</td>
+<td><code>BIBLE</code></td>
+<td>Sacred Scripture</td>
 </tr>
 <tr>
-<td><code>{base}_metadata.json</code></td>
-<td>Metadata only (title, author, quality, provenance)</td>
+<td><code>CATECHISM</code></td>
+<td>Catechism of the Catholic Church</td>
 </tr>
 <tr>
-<td><code>{base}_hierarchy_report.txt</code></td>
-<td>Human-readable hierarchy tree visualization</td>
+<td><code>CANON_LAW</code></td>
+<td>Code of Canon Law</td>
 </tr>
 <tr>
-<td><code>{base}.ndjson</code></td>
-<td>Newline-delimited JSON chunks (optional, with <code>--ndjson</code>)</td>
+<td><code>COUNCILS</code></td>
+<td>Ecumenical Council documents</td>
+</tr>
+<tr>
+<td><code>MAGISTERIUM</code></td>
+<td>Magisterial documents</td>
+</tr>
+<tr>
+<td><code>SOCIAL</code></td>
+<td>Social doctrine</td>
 </tr>
 </tbody>
 </table>
-<p>Where <code>{base}</code> is the base filename (from <code>--output</code> or source filename).</p>
-<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
-<h3 id="single-file-processing">Single File Processing<a class="headerlink" href="#single-file-processing" title="Permanent link">&para;</a></h3>
-<p>Process a single EPUB with default settings (RAG chunking, noise filtering enabled):</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>extract<span class="w"> </span>prayer_primer.epub
+<h3 id="examples_1">Examples<a class="headerlink" href="#examples_1" title="Permanent link">&para;</a></h3>
+<p>Process Bible and Catechism sections:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>vatican-extract<span class="w"> </span>--sections<span class="w"> </span>BIBLE<span class="w"> </span>CATECHISM
 </span></code></pre></div>
-<p>Process with custom output name:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>extract<span class="w"> </span>prayer_primer.epub<span class="w"> </span>--output<span class="w"> </span>prayer
+<p>Upload to cloud storage after processing:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>vatican-extract<span class="w"> </span>--upload
 </span></code></pre></div>
-<p>Process PDF with NLP paragraph-level chunking:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>extract<span class="w"> </span>document.pdf<span class="w"> </span>--chunking-strategy<span class="w"> </span>nlp
+<p>Resume an interrupted extraction:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>vatican-extract<span class="w"> </span>--resume
 </span></code></pre></div>
-<h3 id="batch-processing_1">Batch Processing<a class="headerlink" href="#batch-processing_1" title="Permanent link">&para;</a></h3>
-<p>Process all documents in a directory:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>extract<span class="w"> </span>documents/<span class="w"> </span>--output-dir<span class="w"> </span>outputs/
+<p>Download only with a document limit (for testing):</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>vatican-extract<span class="w"> </span>--download-only<span class="w"> </span>--limit<span class="w"> </span><span class="m">10</span>
 </span></code></pre></div>
-<p>Recursively process directory tree:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>extract<span class="w"> </span>library/<span class="w"> </span>-r<span class="w"> </span>--output-dir<span class="w"> </span>processed/
+<p>Process previously downloaded files and upload to R2:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>vatican-extract<span class="w"> </span>--process-only<span class="w"> </span>--upload-to-r2
 </span></code></pre></div>
-<h3 id="domain-specific-analysis">Domain-Specific Analysis<a class="headerlink" href="#domain-specific-analysis" title="Permanent link">&para;</a></h3>
-<p>Extract Catholic religious text with domain analyzer:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>extract<span class="w"> </span>encyclical.epub<span class="w"> </span>--analyzer<span class="w"> </span>catholic
+<hr />
+<h2 id="extract-images"><code>extract-images</code><a class="headerlink" href="#extract-images" title="Permanent link">&para;</a></h2>
+<h3 id="synopsis_2">Synopsis<a class="headerlink" href="#synopsis_2" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>extract-images<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>URL
 </span></code></pre></div>
-<h3 id="custom-chunking">Custom Chunking<a class="headerlink" href="#custom-chunking" title="Permanent link">&para;</a></h3>
-<p>Create larger chunks (200-800 words) for embeddings:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>extract<span class="w"> </span>book.epub<span class="w"> </span>--min-chunk-words<span class="w"> </span><span class="m">200</span><span class="w"> </span>--max-chunk-words<span class="w"> </span><span class="m">800</span>
-</span></code></pre></div>
-<h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
-<p>Show active configuration sources:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>extract<span class="w"> </span>--show-config
-</span></code></pre></div>
-<p>Generate a sample config file:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>extract<span class="w"> </span>--init-config
-</span></code></pre></div>
-<h3 id="token-aware-chunking">Token-Aware Chunking<a class="headerlink" href="#token-aware-chunking" title="Permanent link">&para;</a></h3>
-<p>Process with token-aware chunking for precise embedding sizes:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>extract<span class="w"> </span>book.epub<span class="w"> </span>--chunking-strategy<span class="w"> </span>token_aware<span class="w"> </span>--target-tokens<span class="w"> </span><span class="m">300</span><span class="w"> </span>--max-tokens<span class="w"> </span><span class="m">400</span>
-</span></code></pre></div>
-<h3 id="frontback-matter-detection">Front/Back Matter Detection<a class="headerlink" href="#frontback-matter-detection" title="Permanent link">&para;</a></h3>
-<p>Detect and filter front/back matter from EPUBs:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>extract<span class="w"> </span>book.epub<span class="w"> </span>--detect-front-matter<span class="w"> </span>--filter-front-matter
-</span></code></pre></div>
-<h3 id="debugging">Debugging<a class="headerlink" href="#debugging" title="Permanent link">&para;</a></h3>
-<p>Enable debug logging and dump intermediate data:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>extract<span class="w"> </span>problematic.epub<span class="w"> </span>-v<span class="w"> </span>--debug-dump
-</span></code></pre></div>
-<h2 id="chunking-strategies">Chunking Strategies<a class="headerlink" href="#chunking-strategies" title="Permanent link">&para;</a></h2>
-<h3 id="rag-strategy-default">RAG Strategy (Default)<a class="headerlink" href="#rag-strategy-default" title="Permanent link">&para;</a></h3>
-<p><strong>Aliases</strong>: <code>rag</code>, <code>semantic</code>, <code>embeddings</code></p>
-<p><strong>Behavior</strong>: Merges consecutive paragraphs under the same heading hierarchy until reaching target chunk size (100-500 words).</p>
-<p><strong>Use for</strong>: Vector search, RAG systems, semantic retrieval, embeddings.</p>
-<p><strong>Output</strong>: Fewer, larger chunks with <code>merged_paragraph_ids</code> and <code>source_paragraph_count</code> metadata.</p>
-<p><strong>Example</strong>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>extract<span class="w"> </span>book.epub
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>extract<span class="w"> </span>book.epub<span class="w"> </span>--chunking-strategy<span class="w"> </span>rag<span class="w"> </span>--min-chunk-words<span class="w"> </span><span class="m">150</span><span class="w"> </span>--max-chunk-words<span class="w"> </span><span class="m">400</span>
-</span></code></pre></div>
-<h3 id="nlp-strategy">NLP Strategy<a class="headerlink" href="#nlp-strategy" title="Permanent link">&para;</a></h3>
-<p><strong>Aliases</strong>: <code>nlp</code>, <code>paragraph</code></p>
-<p><strong>Behavior</strong>: One paragraph per chunk (preserves exact paragraph boundaries).</p>
-<p><strong>Use for</strong>: Fine-grained NLP tasks, sentence classification, named entity recognition.</p>
-<p><strong>Output</strong>: More, smaller chunks (~40-80 words on average).</p>
-<p><strong>Example</strong>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>extract<span class="w"> </span>book.epub<span class="w"> </span>--chunking-strategy<span class="w"> </span>nlp
-</span></code></pre></div>
-<h3 id="token-aware-strategy">Token-Aware Strategy<a class="headerlink" href="#token-aware-strategy" title="Permanent link">&para;</a></h3>
-<p><strong>Aliases</strong>: <code>token_aware</code>, <code>technical</code>, <code>small_to_big</code></p>
-<p><strong>Behavior</strong>: Chunks text using actual token counts from a configurable tokenizer (default: <code>google/embeddinggemma-300m</code>). Supports overlap between chunks and special handling for code blocks.</p>
-<p><strong>Use for</strong>: Token-budget-sensitive applications, embedding models with strict token limits, technical documentation with code.</p>
-<p><strong>Output</strong>: Chunks sized to precise token counts with optional overlap.</p>
-<p><strong>Example</strong>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>extract<span class="w"> </span>book.epub<span class="w"> </span>--chunking-strategy<span class="w"> </span>token_aware
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>extract<span class="w"> </span>book.epub<span class="w"> </span>--chunking-strategy<span class="w"> </span>token_aware<span class="w"> </span>--target-tokens<span class="w"> </span><span class="m">300</span><span class="w"> </span>--max-tokens<span class="w"> </span><span class="m">400</span>
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>extract<span class="w"> </span>technical.md<span class="w"> </span>--chunking-strategy<span class="w"> </span>technical<span class="w"> </span>--code-max-tokens<span class="w"> </span><span class="m">512</span>
-</span></code></pre></div>
-<h2 id="tiny-chunk-filtering">Tiny Chunk Filtering<a class="headerlink" href="#tiny-chunk-filtering" title="Permanent link">&para;</a></h2>
-<p>Filters chunks with fewer than 5 words as noise. Three tiers:</p>
-<h3 id="conservative-default">Conservative (Default)<a class="headerlink" href="#conservative-default" title="Permanent link">&para;</a></h3>
-<p><strong>Removes</strong>:
-- Index entries (<code>"experimentation, 17"</code>)
-- TOC fragments (<code>"• References"</code>)
-- Punctuation (<code>"N"</code>, <code>"◦"</code>)
-- Figure labels (<code>"Listing 10.9"</code>)
-- Page numbers (<code>"305"</code>)</p>
-<p><strong>Reduction</strong>: ~47.6% of tiny chunks</p>
-<p><strong>Risk</strong>: Zero (no false positives in validation)</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>extract<span class="w"> </span>book.epub
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>extract<span class="w"> </span>book.epub<span class="w"> </span>--filter-tiny-chunks<span class="w"> </span>conservative
-</span></code></pre></div>
-<h3 id="standard">Standard<a class="headerlink" href="#standard" title="Permanent link">&para;</a></h3>
-<p><strong>Adds</strong>:
-- Answer keys (<code>"1. C"</code>)
-- Single-word bullets (<code>"• Next"</code>)
-- Page ranges (<code>"305 - 310"</code>)</p>
-<p><strong>Reduction</strong>: ~48.8%</p>
-<p><strong>Risk</strong>: Very low</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>extract<span class="w"> </span>book.epub<span class="w"> </span>--filter-tiny-chunks<span class="w"> </span>standard
-</span></code></pre></div>
-<h3 id="aggressive">Aggressive<a class="headerlink" href="#aggressive" title="Permanent link">&para;</a></h3>
-<p><strong>Adds</strong>:
-- All appendix content
-- Cross-references (<code>"See Chapter 7"</code>)</p>
-<p><strong>Reduction</strong>: ~60%</p>
-<p><strong>Risk</strong>: Medium (may remove valid short content)</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>extract<span class="w"> </span>book.epub<span class="w"> </span>--filter-tiny-chunks<span class="w"> </span>aggressive
-</span></code></pre></div>
-<h3 id="disabled">Disabled<a class="headerlink" href="#disabled" title="Permanent link">&para;</a></h3>
-<p>No filtering (keep all tiny chunks):</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>extract<span class="w"> </span>book.epub<span class="w"> </span>--filter-tiny-chunks<span class="w"> </span>off
-</span></code></pre></div>
-<h2 id="noise-filtering">Noise Filtering<a class="headerlink" href="#noise-filtering" title="Permanent link">&para;</a></h2>
-<p><strong>Default</strong>: Enabled for all formats.</p>
-<p>The <code>--no-filter-noise</code> flag disables semantic noise filtering which removes:</p>
-<ul>
-<li><strong>Index pages</strong>: Reference lists, number sequences</li>
-<li><strong>Navigation</strong>: TOC entries, "Next/Previous" links</li>
-<li><strong>Boilerplate</strong>: Copyright notices, ISBN numbers</li>
-</ul>
-<p><strong>When to disable</strong>:
-- Processing already-clean documents
-- Need exact paragraph counts for benchmarking
-- Debugging extraction issues</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>extract<span class="w"> </span>document.html<span class="w"> </span>--no-filter-noise
-</span></code></pre></div>
-<h2 id="format-detection">Format Detection<a class="headerlink" href="#format-detection" title="Permanent link">&para;</a></h2>
-<p>The extractor automatically detects document format from file extension:</p>
+<h3 id="description_2">Description<a class="headerlink" href="#description_2" title="Permanent link">&para;</a></h3>
+<p>Scrapes images from websites and optionally creates EPUB photo galleries or uploads to S3. Supports static (Requests + BeautifulSoup), dynamic (Playwright), and auto-detecting scraper modes. Includes quality filtering by image dimensions and file size, WebP-to-PNG conversion, and SVG support.</p>
+<h3 id="options_2">Options<a class="headerlink" href="#options_2" title="Permanent link">&para;</a></h3>
+<h4 id="inputoutput">Input/Output<a class="headerlink" href="#inputoutput" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
 <tr>
-<th>Extension</th>
-<th>Format</th>
-<th>Extractor</th>
+<th>Option</th>
+<th>Description</th>
+<th>Default</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>.epub</code></td>
-<td>EPUB</td>
-<td><code>EpubExtractor</code></td>
+<td><code>URL</code></td>
+<td>URL of the website to scrape images from.</td>
+<td>Required</td>
 </tr>
 <tr>
-<td><code>.pdf</code></td>
-<td>PDF</td>
-<td><code>MuPdfPdfExtractor</code> or <code>PdfExtractor</code></td>
+<td><code>--output PATH</code></td>
+<td>Output EPUB file path. Implies EPUB generation.</td>
+<td><code>./output.epub</code></td>
 </tr>
 <tr>
-<td><code>.html</code>, <code>.htm</code></td>
-<td>HTML</td>
-<td><code>HtmlExtractor</code></td>
+<td><code>--output-dir DIR</code></td>
+<td>Directory to save scraped images.</td>
+<td><code>./images</code></td>
 </tr>
 <tr>
-<td><code>.md</code>, <code>.markdown</code>, <code>.txt</code></td>
-<td>Markdown</td>
-<td><code>MarkdownExtractor</code></td>
-</tr>
-<tr>
-<td><code>.json</code></td>
-<td>JSON</td>
-<td><code>JsonExtractor</code></td>
+<td><code>--no-epub</code></td>
+<td>Skip EPUB generation, just download images.</td>
+<td>EPUB enabled</td>
 </tr>
 </tbody>
 </table>
-<div class="admonition note">
-<p class="admonition-title">PDF Extractor Auto-Selection</p>
-<p>When the native Zig/MuPDF library is available, PDF files automatically use <code>MuPdfPdfExtractor</code> for high-performance extraction with font-based heading detection. Falls back to <code>PdfExtractor</code> (pdfplumber) otherwise.</p>
-</div>
-<h2 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h2>
-<p>None. All configuration is via CLI flags and configuration files.</p>
-<h2 id="configuration-files">Configuration Files<a class="headerlink" href="#configuration-files" title="Permanent link">&para;</a></h2>
-<p>Configuration is loaded from multiple sources (highest priority first):</p>
-<ol>
-<li>CLI flags</li>
-<li><code>./extraction.toml</code> (project-level)</li>
-<li><code>pyproject.toml [tool.extraction]</code> section</li>
-<li><code>~/.config/extraction/config.toml</code> (user-level)</li>
-<li>Built-in defaults</li>
-</ol>
-<p>Use <code>extract --show-config</code> to see which sources are active and the merged values. Use <code>extract --init-config</code> to generate a sample <code>extraction.toml</code> in the current directory.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>extract<span class="w"> </span>--show-config
-</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>extract<span class="w"> </span>--init-config
-</span></code></pre></div>
-<h2 id="quality-routing">Quality Routing<a class="headerlink" href="#quality-routing" title="Permanent link">&para;</a></h2>
-<p>All documents are automatically scored and routed:</p>
+<h4 id="scraper">Scraper<a class="headerlink" href="#scraper" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
 <tr>
-<th>Route</th>
-<th>Score</th>
-<th>Meaning</th>
-<th>Action</th>
+<th>Option</th>
+<th>Description</th>
+<th>Default</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>A</strong></td>
-<td>≥ 0.7</td>
-<td>High quality</td>
-<td>Automatic processing</td>
-</tr>
-<tr>
-<td><strong>B</strong></td>
-<td>0.4 - 0.7</td>
-<td>Medium quality</td>
-<td>Review recommended</td>
-</tr>
-<tr>
-<td><strong>C</strong></td>
-<td>&lt; 0.4</td>
-<td>Low quality</td>
-<td>Manual review required</td>
+<td><code>--scraper-type {auto,static,dynamic}</code></td>
+<td>Type of scraper. <code>auto</code> tries static first then falls back to dynamic. <code>static</code> uses Requests + BeautifulSoup. <code>dynamic</code> uses Playwright.</td>
+<td><code>auto</code></td>
 </tr>
 </tbody>
 </table>
-<p>Quality signals include:
-- Average paragraph length
-- Heading density
-- Vocabulary richness
-- Scripture/cross-reference density (for Catholic texts)</p>
-<p>Route information is included in output JSON (<code>metadata.quality.route</code>).</p>
+<h4 id="epub-metadata">EPUB Metadata<a class="headerlink" href="#epub-metadata" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--title TITLE</code></td>
+<td>EPUB title.</td>
+<td><code>Image Gallery</code></td>
+</tr>
+<tr>
+<td><code>--author AUTHOR</code></td>
+<td>EPUB author.</td>
+<td><code>Web Scraper</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="image-filtering">Image Filtering<a class="headerlink" href="#image-filtering" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--min-image-size KB</code></td>
+<td>Minimum image file size in KB.</td>
+<td><code>10</code></td>
+</tr>
+<tr>
+<td><code>--max-images N</code></td>
+<td>Maximum number of images to extract.</td>
+<td>Unlimited</td>
+</tr>
+<tr>
+<td><code>--min-width PX</code></td>
+<td>Minimum image width in pixels.</td>
+<td><code>200</code></td>
+</tr>
+<tr>
+<td><code>--min-height PX</code></td>
+<td>Minimum image height in pixels.</td>
+<td><code>200</code></td>
+</tr>
+<tr>
+<td><code>--no-quality-check</code></td>
+<td>Disable quality filtering (keep all images regardless of size).</td>
+<td>Quality check enabled</td>
+</tr>
+<tr>
+<td><code>--include-svg</code></td>
+<td>Include SVG images.</td>
+<td>SVG excluded</td>
+</tr>
+<tr>
+<td><code>--no-convert-webp</code></td>
+<td>Don't convert WebP images to PNG.</td>
+<td>WebP converted</td>
+</tr>
+</tbody>
+</table>
+<h4 id="s3-upload">S3 Upload<a class="headerlink" href="#s3-upload" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--upload-s3</code></td>
+<td>Upload images to S3 (requires <code>--s3-bucket</code>).</td>
+<td>Disabled</td>
+</tr>
+<tr>
+<td><code>--s3-bucket NAME</code></td>
+<td>S3 bucket name. Required if <code>--upload-s3</code> is set.</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--s3-prefix PREFIX</code></td>
+<td>S3 key prefix.</td>
+<td><code>images/</code></td>
+</tr>
+<tr>
+<td><code>--s3-region REGION</code></td>
+<td>S3 region.</td>
+<td><code>us-east-1</code></td>
+</tr>
+<tr>
+<td><code>--s3-public</code></td>
+<td>Make S3 uploads public.</td>
+<td>Private</td>
+</tr>
+</tbody>
+</table>
+<h3 id="examples_2">Examples<a class="headerlink" href="#examples_2" title="Permanent link">&para;</a></h3>
+<p>Scrape images and build an EPUB gallery:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>extract-images<span class="w"> </span>https://example.com/gallery<span class="w"> </span>--title<span class="w"> </span><span class="s2">&quot;Gallery&quot;</span><span class="w"> </span>--output<span class="w"> </span>gallery.epub
+</span></code></pre></div>
+<p>Download images only without EPUB:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>extract-images<span class="w"> </span>https://example.com/photos<span class="w"> </span>--output-dir<span class="w"> </span>./images<span class="w"> </span>--no-epub
+</span></code></pre></div>
+<p>Use dynamic scraper with size limits:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>extract-images<span class="w"> </span>https://example.com/gallery<span class="w"> </span>--scraper-type<span class="w"> </span>dynamic<span class="w"> </span>--min-image-size<span class="w"> </span><span class="m">50</span><span class="w"> </span>--max-images<span class="w"> </span><span class="m">50</span>
+</span></code></pre></div>
+<p>Scrape and upload to S3:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>extract-images<span class="w"> </span>https://example.com<span class="w"> </span>--output<span class="w"> </span>photos.epub<span class="w"> </span>--upload-s3<span class="w"> </span>--s3-bucket<span class="w"> </span>my-bucket
+</span></code></pre></div>
+<hr />
+<h2 id="token-rechunk"><code>token-rechunk</code><a class="headerlink" href="#token-rechunk" title="Permanent link">&para;</a></h2>
+<h3 id="synopsis_3">Synopsis<a class="headerlink" href="#synopsis_3" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>token-rechunk<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>FILE
+</span></code></pre></div>
+<h3 id="description_3">Description<a class="headerlink" href="#description_3" title="Permanent link">&para;</a></h3>
+<p>Transforms word-based extraction JSON into token-optimized JSONL chunks for embedding models (default tokenizer: <code>google/embeddinggemma-300m</code>). Three preset modes optimize for different use cases. Supports sentence-aware overlap, hierarchy preservation, and custom token ranges.</p>
+<p>Output is JSONL where each line contains <code>text</code> and <code>metadata</code> (doc_id, source_file, hierarchy, token_count, source_chunk_id, sentence_count, is_overlap).</p>
+<h3 id="modes">Modes<a class="headerlink" href="#modes" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Token Range</th>
+<th>Overlap</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>retrieval</code></td>
+<td>256-400</td>
+<td>15%</td>
+<td>Precision search, RAG</td>
+</tr>
+<tr>
+<td><code>recommendation</code></td>
+<td>512-700</td>
+<td>10%</td>
+<td>Context-rich recommendations</td>
+</tr>
+<tr>
+<td><code>balanced</code></td>
+<td>400-512</td>
+<td>10%</td>
+<td>General purpose (default)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="options_3">Options<a class="headerlink" href="#options_3" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FILE</code></td>
+<td>Input JSON file from extraction library.</td>
+<td>Required</td>
+</tr>
+<tr>
+<td><code>-o, --output PATH</code></td>
+<td>Output JSONL file.</td>
+<td><code>&lt;input&gt;_tokenized.jsonl</code></td>
+</tr>
+<tr>
+<td><code>--mode {retrieval,recommendation,balanced}</code></td>
+<td>Chunking mode preset.</td>
+<td><code>balanced</code></td>
+</tr>
+<tr>
+<td><code>--min-tokens N</code></td>
+<td>Minimum tokens per chunk. Overrides mode preset.</td>
+<td>Preset value</td>
+</tr>
+<tr>
+<td><code>--max-tokens N</code></td>
+<td>Maximum tokens per chunk. Overrides mode preset.</td>
+<td>Preset value</td>
+</tr>
+<tr>
+<td><code>--overlap-percent FLOAT</code></td>
+<td>Overlap percentage between chunks (0.0-1.0). Overrides mode preset.</td>
+<td>Preset value</td>
+</tr>
+<tr>
+<td><code>--no-overlap</code></td>
+<td>Disable chunk overlap entirely.</td>
+<td>Overlap enabled</td>
+</tr>
+<tr>
+<td><code>--preserve-metadata</code></td>
+<td>Preserve scripture_references, cross_references, and dates_mentioned from source chunks.</td>
+<td>Disabled</td>
+</tr>
+<tr>
+<td><code>--stats</code></td>
+<td>Print token statistics after processing.</td>
+<td>Disabled</td>
+</tr>
+<tr>
+<td><code>-v, --verbose</code></td>
+<td>Verbose logging (DEBUG level).</td>
+<td>INFO level</td>
+</tr>
+</tbody>
+</table>
+<h3 id="examples_3">Examples<a class="headerlink" href="#examples_3" title="Permanent link">&para;</a></h3>
+<p>Re-chunk for RAG retrieval:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>token-rechunk<span class="w"> </span>document.json<span class="w"> </span>--mode<span class="w"> </span>retrieval
+</span></code></pre></div>
+<p>Re-chunk for recommendations:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>token-rechunk<span class="w"> </span>document.json<span class="w"> </span>--mode<span class="w"> </span>recommendation
+</span></code></pre></div>
+<p>Custom token range with statistics:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>token-rechunk<span class="w"> </span>document.json<span class="w"> </span>--min-tokens<span class="w"> </span><span class="m">300</span><span class="w"> </span>--max-tokens<span class="w"> </span><span class="m">500</span><span class="w"> </span>--stats
+</span></code></pre></div>
+<p>Preserve domain metadata and disable overlap:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>token-rechunk<span class="w"> </span>document.json<span class="w"> </span>--mode<span class="w"> </span>retrieval<span class="w"> </span>--preserve-metadata<span class="w"> </span>--no-overlap
+</span></code></pre></div>
+<p>Specify output path:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>token-rechunk<span class="w"> </span>document.json<span class="w"> </span>--mode<span class="w"> </span>balanced<span class="w"> </span>-o<span class="w"> </span>chunks_balanced.jsonl
+</span></code></pre></div>
+<hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../../configuration/">Configuration Reference</a> - Configuration dataclass options</li>
-<li><a href="../../output-schema/">Output Schema Reference</a> - JSON output format</li>
-<li><a href="../../api/base-extractor/">BaseExtractor API</a> - Programmatic usage</li>
-<li><a href="../../../getting-started/quickstart/">Quick Start Tutorial</a> - Basic usage examples</li>
-<li><a href="../../../getting-started/multi-format/">Multi-Format Extraction</a> - Batch processing patterns</li>
+<li><a href="../../../how-to/token-rechunking/">Token Rechunking Guide</a> -- detailed how-to</li>
+<li><a href="../extract/">extract</a> -- primary extraction CLI</li>
 </ul>
 
 
