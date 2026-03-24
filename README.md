@@ -1,42 +1,22 @@
-# extraction
+# doc-extraction
 
 [![PyPI version](https://badge.fury.io/py/doc-extraction.svg)](https://pypi.org/project/doc-extraction/)
 [![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![Documentation](https://img.shields.io/badge/docs-mkdocs-blue.svg)](https://hello-world-bfree.github.io/extraction/)
 
-Multi-format document extraction library for processing EPUB, PDF, HTML, Markdown, and JSON documents into structured, hierarchical chunks with domain-specific metadata enrichment.
-
-**Version**: 0.0.1 (First Public Release)
-
-## Features
-
-- **Multi-format support**: EPUB, PDF, HTML, Markdown, JSON
-- **Chunking strategies**: RAG/embeddings mode (100-500 words) and NLP/paragraph mode
-- **Hierarchical structure**: Maintains 6-level heading hierarchy across documents
-- **Quality scoring**: Automatic document quality assessment with routing (A/B/C)
-- **Noise filtering**: Removes index pages, copyright boilerplate, navigation fragments
-- **Domain analyzers**: Catholic literature and generic analyzers
-- **Formatting preservation**: Poetry, blockquotes, lists, tables, emphasis
-- **Reference extraction**: Scripture references, cross-references, dates
-- **Vatican pipeline**: Specialized pipeline for vatican.va document processing
-- **Token re-chunking**: Optimize chunks for embedding models (embeddinggemma-300m)
+Multi-format document extraction library that turns EPUB, PDF, HTML, Markdown, and JSON documents into structured, hierarchical chunks with quality scoring, noise filtering, and domain-specific metadata enrichment.
 
 ## Installation
 
-### From PyPI (Recommended)
-
 ```bash
-pip install doc-extraction
-
-# With optional dependencies
-pip install doc-extraction[pdf]              # PDF support
-pip install doc-extraction[vatican]          # Vatican pipeline with S3
-pip install doc-extraction[images]           # Image scraping + EPUB creation
-pip install doc-extraction[finetuning]       # Token re-chunking tools
-pip install doc-extraction[dev]              # Testing tools
+pip install doc-extraction            # Core (EPUB, HTML, Markdown, JSON)
+pip install doc-extraction[pdf]       # + PDF support (pdfplumber)
+pip install doc-extraction[finetuning] # + Token re-chunking (embeddinggemma-300m)
+pip install doc-extraction[images]    # + Image scraping & EPUB gallery builder
+pip install doc-extraction[vatican]   # + Vatican archive pipeline (S3)
 ```
 
-### From Source (Development)
+From source:
 
 ```bash
 git clone https://github.com/hello-world-bfree/extraction.git
@@ -46,147 +26,138 @@ uv pip install -e ".[pdf,dev]"
 
 ## Quick Start
 
-### Basic Usage
+### CLI
+
+```bash
+extract document.epub                          # RAG chunking (default)
+extract document.pdf --chunking-strategy nlp   # Paragraph-level chunks
+extract documents/ -r --output-dir outputs/    # Batch processing
+extract book.epub --analyzer catholic          # Domain-specific metadata
+```
+
+### Python API
 
 ```python
 from extraction.extractors import EpubExtractor
-from extraction.analyzers import GenericAnalyzer
 
-# Extract chunks from EPUB
 extractor = EpubExtractor("book.epub")
 extractor.load()
 extractor.parse()
-metadata = extractor.extract_metadata()
-
-# Get output
-output = extractor.get_output_data()
-print(f"Extracted {len(output['chunks'])} chunks")
-```
-
-### With Domain Analysis
-
-```python
-from extraction.extractors import EpubExtractor
-from extraction.analyzers import CatholicAnalyzer
-
-extractor = EpubExtractor("encyclical.epub")
-extractor.load()
-extractor.parse()
-metadata = extractor.extract_metadata()
-
-# Enrich with Catholic-specific metadata
-analyzer = CatholicAnalyzer()
-enriched = analyzer.enrich_metadata(
-    metadata.to_dict(),
-    extractor.full_text,
-    [c.to_dict() for c in extractor.chunks]
-)
+extractor.extract_metadata()
 
 output = extractor.get_output_data()
-output['metadata'].update(enriched)
-```
-
-### CLI Usage
-
-```bash
-# Extract single document (default: RAG chunking, noise filtering enabled)
-extract document.epub
-
-# Batch processing
-extract documents/ -r --output-dir outputs/
-
-# Custom chunking strategy
-extract book.epub --chunking-strategy rag --min-chunk-words 200 --max-chunk-words 800
-extract document.pdf --chunking-strategy nlp  # Paragraph-level chunks
-
-# Disable noise filtering (keep index pages, copyright, etc.)
-extract document.html --no-filter-noise
-
-# Enable formatting preservation
-extract book.epub --preserve-formatting
-
-# With Catholic domain analysis
-extract encyclical.epub --analyzer catholic
-
-# Vatican archive pipeline
-vatican-extract --sections BIBLE CATECHISM --upload
+# output["chunks"] — list of Chunk dicts with stable_id, text, hierarchy, word_count, ...
+# output["metadata"] — title, author, provenance, quality score/route, ...
 ```
 
 ## Chunking Strategies
 
-Choose between two chunking modes across **all formats** (EPUB, PDF, HTML, Markdown, JSON):
+All strategies work across every supported format.
 
-### RAG/Semantic Mode (Default)
-- Merges paragraphs under same heading hierarchy
-- Target: 100-500 words per chunk (optimal for embeddings)
-- Use for: Vector search, RAG systems, semantic retrieval
-- ~60-80% reduction in chunk count vs paragraph mode
-
-```bash
-extract document.epub  # Default
-extract document.pdf --min-chunk-words 200 --max-chunk-words 800
-```
-
-### NLP/Paragraph Mode
-- Paragraph-level chunks (one paragraph = one chunk)
-- Use for: Fine-grained NLP tasks, sentence classification, NER
-- Preserves exact paragraph boundaries
+| Strategy | Aliases | Description |
+|----------|---------|-------------|
+| **RAG** (default) | `rag`, `semantic`, `embeddings` | Merges paragraphs under same heading hierarchy. 100–500 words/chunk. |
+| **NLP** | `nlp`, `paragraph` | One paragraph = one chunk. Preserves exact boundaries. |
+| **Token-aware** | `token_aware`, `technical` | Token-count constrained (256–512 tokens). Sentence-aware overlap. |
+| **Small-to-big** | `small_to_big` | Hierarchical parent-child relationships for multi-granularity retrieval. |
 
 ```bash
-extract document.epub --chunking-strategy nlp
+extract doc.epub --min-words 200 --max-words 800
+extract doc.epub --chunking-strategy token_aware
 ```
 
-## Token-Based Re-Chunking for Embeddings
+### Token Re-Chunking
 
-Transform word-based extraction output into token-optimized chunks for embedding models:
+Post-process extraction output into token-optimized chunks for embedding models:
 
 ```bash
-# Install finetuning dependencies
-pip install doc-extraction[finetuning]
-
-# Retrieval mode: 256-400 tokens (precision-optimized)
-token-rechunk document.json --mode retrieval
-
-# Recommendation mode: 512-700 tokens (context-optimized)
-token-rechunk document.json --mode recommendation
-
-# Custom configuration
-token-rechunk document.json --min-tokens 300 --max-tokens 500 --overlap-percent 0.12
-
-# Batch processing for RAG applications
-mkdir rag_corpus/
-for file in extractions/*.json; do
-    token-rechunk "$file" --mode retrieval --output "rag_corpus/$(basename $file .json).jsonl"
-done
+token-rechunk document.json --mode retrieval       # 256-400 tokens, 15% overlap
+token-rechunk document.json --mode recommendation  # 512-700 tokens
+token-rechunk document.json --mode balanced        # 400-512 tokens
 ```
 
-**Features:**
-- Sentence-aware overlap (10-20%)
-- Actual tokenization using embeddinggemma-300m tokenizer
-- 2048 token hard limit with automatic splitting
-- Hierarchy preservation across chunks
+## Quality & Filtering
 
-## Architecture
+**Quality scoring** assigns each document a score (0–1) and route (A/B/C) based on paragraph length, heading density, vocabulary richness, and reference density.
 
-### Three-Layer Design
+**Noise filtering** (enabled by default) removes index pages, copyright boilerplate, and navigation fragments. Disable with `--no-filter-noise`.
 
-1. **Core Utilities** (`src/extraction/core/`)
-   - Format-agnostic text processing, chunking, quality scoring
-   - Models: `Chunk`, `Metadata`, `Provenance`, `Quality`, `Hierarchy`
+**Tiny chunk filtering** removes low-signal chunks below configurable thresholds:
 
-2. **Extractors** (`src/extraction/extractors/`)
-   - Format-specific parsers: EPUB, PDF, HTML, Markdown, JSON
-   - All inherit from `BaseExtractor` ABC
-   - Produce uniform `Chunk` objects regardless of format
+```bash
+extract doc.epub --filter-tiny-chunks conservative  # default
+extract doc.epub --filter-tiny-chunks aggressive
+```
 
-3. **Analyzers** (`src/extraction/analyzers/`)
-   - Domain-specific metadata enrichment
-   - `CatholicAnalyzer`: Document type, subjects, themes, related documents, geographic focus
-   - `GenericAnalyzer`: Basic metadata extraction for general content
+**Front/back matter detection** (EPUB) flags or removes dedications, endorsements, glossaries, and appendices:
 
-## Output Format
+```bash
+extract book.epub --detect-front-matter             # Soft: adds quality_flags
+extract book.epub --filter-front-matter              # Hard: removes detected chunks
+```
 
-All extractors produce identical JSON structure:
+**Quality flags** are soft labels on individual chunks (`below_rag_minimum`, `likely_noncore_matter_*`, `contains_reference_block_*`) that preserve content while signaling downstream consumers.
+
+## Extractors
+
+| Format | Extractor | Notes |
+|--------|-----------|-------|
+| EPUB | `EpubExtractor` | Front-matter detection, visual heading detection, nested hierarchy, spine-aware |
+| PDF | `PdfExtractor` | pdfplumber backend |
+| PDF | `MuPdfPdfExtractor` | Native Zig/MuPDF backend with font metadata for heading detection |
+| HTML | `HtmlExtractor` | BeautifulSoup, semantic heading hierarchy |
+| Markdown | `MarkdownExtractor` | ATX/setext headings, hierarchy preservation |
+| JSON | `JsonExtractor` | Ingest preprocessed chunks (JSON/JSONL) |
+
+All extractors follow a state machine (`CREATED → load → parse → extract_metadata → get_output_data`) and produce identical `Chunk` output.
+
+### Native PDF Parser (Zig/MuPDF)
+
+The `cores/` directory contains a Zig shared library wrapping MuPDF for high-performance PDF text extraction with per-span font metadata (name, size, bold/italic/mono flags, bounding boxes). `MuPdfPdfExtractor` uses font statistics to auto-detect headings without relying on PDF structure tags.
+
+Requires MuPDF installed via Homebrew and Zig master branch. Falls back to `PdfExtractor` when unavailable.
+
+## Analyzers
+
+Domain-specific metadata enrichment via a plugin system:
+
+- **`GenericAnalyzer`** — Title, author, basic metadata.
+- **`CatholicAnalyzer`** — Document type classification (Encyclical, Decree, etc.), subject detection (Liturgy, Sacraments, Scripture), theme extraction, related document linking, geographic focus, promulgation dates.
+
+```bash
+extract encyclical.epub --analyzer catholic
+```
+
+## Configuration
+
+Config merges from (highest priority first):
+
+1. CLI flags
+2. `./extraction.toml`
+3. `pyproject.toml [tool.extraction]`
+4. `~/.config/extraction/config.toml`
+5. Built-in defaults
+
+```bash
+extract --show-config     # Display active configuration
+extract --init-config     # Generate extraction.toml template
+```
+
+## Tools
+
+| Command | Description |
+|---------|-------------|
+| `extract` | Unified extraction CLI for all formats |
+| `token-rechunk` | Token-optimized re-chunking for embedding models |
+| `annotate-chunks` | TUI for labeling chunk quality (active learning with LightGBM) |
+| `capture-chunks` | TUI for chunk selection and review |
+| `corpus-builder` | Build JSONL corpora from extracted chunks |
+| `training-builder` | Prepare ML training datasets with stratified splits |
+| `fix-hierarchy` | Repair malformed document hierarchies |
+| `vatican-extract` | Vatican archive pipeline (discover → download → extract → upload) |
+| `extract-images` | Scrape images from URLs and build EPUB galleries |
+
+## Output Schema
 
 ```json
 {
@@ -194,175 +165,66 @@ All extractors produce identical JSON structure:
     "title": "Document Title",
     "author": "Author Name",
     "provenance": {
-      "doc_id": "unique-id",
-      "source_file": "path/to/file.epub"
+      "doc_id": "sha1-based-id",
+      "source_file": "path/to/file.epub",
+      "content_hash": "abc123..."
     },
-    "quality": {
-      "score": 0.95,
-      "route": "A"
-    },
-    "document_type": "Encyclical",
-    "subjects": ["Liturgy", "Sacraments"]
+    "quality": { "score": 0.87, "route": "A" }
   },
   "chunks": [
     {
-      "stable_id": "abc123...",
-      "text": "Chunk text content",
+      "stable_id": "deterministic-sha1",
+      "text": "Chunk text content...",
       "hierarchy": {
         "level_1": "Part I",
-        "level_2": "Chapter 1"
+        "level_2": "Chapter 1",
+        "level_3": null
       },
-      "word_count": 42,
+      "word_count": 312,
+      "quality_flags": [],
       "scripture_references": ["John 3:16"],
-      "formatted_text": "> Blockquote with *emphasis*",
-      "structure_metadata": {...}
+      "cross_references": [],
+      "content_type": "body"
     }
   ]
 }
 ```
 
-## Noise Filtering
-
-Automatic detection and removal of content with zero semantic value:
-
-- **Index pages**: Reference lists, number sequences
-- **Copyright boilerplate**: Legal notices, ISBN numbers, publisher info
-- **Navigation fragments**: TOC entries, page numbers, "Next/Previous" links
-
-**Impact**: ~3-5% chunk reduction with zero false positives (tested on 72k+ chunks)
-
-```bash
-# Enabled by default
-extract document.html
-
-# Disable if needed
-extract document.html --no-filter-noise
-```
-
-## Formatting Preservation
-
-Preserve structural intent during extraction:
-
-```bash
-# Enable all formatting preservation
-extract book.epub --preserve-formatting
-
-# Fine-grained control
-extract book.epub --preserve-formatting --no-preserve-tables
-```
-
-**What gets preserved:**
-- Poetry/verse line breaks
-- Blockquotes with attribution
-- Nested lists (ordered/unordered)
-- Tables (markdown format)
-- Emphasis (italic/bold)
-- Code blocks
-
-## Image Extraction to EPUB
-
-Scrape images from websites and create EPUB photo galleries:
-
-```bash
-# Install image dependencies
-pip install doc-extraction[images]
-
-# Basic usage - scrape and build EPUB
-extract-images https://example.com/gallery --title "Gallery" --output gallery.epub
-
-# Just download images (no EPUB)
-extract-images https://example.com/photos --output-dir ./images --no-epub
-
-# With S3 backup
-extract-images https://example.com --title "Photos" \
-  --output photos.epub \
-  --upload-s3 --s3-bucket my-bucket --s3-prefix "galleries/"
-```
-
-## Configuration
-
-Each extractor accepts a `config` dict with format-specific options:
-
-```python
-from extraction.extractors import EpubExtractor
-
-extractor = EpubExtractor("book.epub", config={
-    'chunking_strategy': 'rag',           # 'rag' or 'nlp'
-    'min_chunk_words': 100,               # Minimum chunk size
-    'max_chunk_words': 500,               # Maximum chunk size
-    'filter_noise': True,                 # Enable noise filtering
-    'preserve_formatting': True,          # Preserve structure
-    'preserve_hierarchy_across_docs': True,  # EPUB: hierarchy flows across spine
-    'toc_hierarchy_level': 1,             # EPUB: TOC level to use
-})
-```
-
-See [documentation](https://hello-world-bfree.github.io/extraction/reference/configuration/) for all options.
+NDJSON output is also supported (`--ndjson`).
 
 ## Testing
 
 ```bash
-# Run all tests
-uv run pytest
-
-# Skip integration tests
-uv run pytest -m "not integration"
-
-# Run with coverage
-uv run pytest --cov=src/extraction --cov-report=html
+uv run pytest                          # All tests (~500)
+uv run pytest -m "not integration"     # Skip integration tests
+uv run pytest -k "test_name"           # Single test
+uv run pytest --cov=src/extraction     # Coverage report
 ```
-
-**Current status**: 228 tests, 41% coverage
-
-## Requirements
-
-- **Python 3.13+** (required)
-- **uv** for package management (recommended)
-
-## Documentation
-
-- **Homepage**: https://hello-world-bfree.github.io/extraction/
-- **PyPI**: https://pypi.org/project/doc-extraction/
-- **GitHub**: https://github.com/hello-world-bfree/extraction
-- **Issues**: https://github.com/hello-world-bfree/extraction/issues
-
-For detailed documentation on architecture, adding extractors/analyzers, testing strategy, and common patterns, see [CLAUDE.md](CLAUDE.md).
-
-## Use Cases
-
-### Catholic Literature Processing
-- Encyclicals, catechisms, prayer books
-- Vatican archive document extraction
-- Scripture reference extraction
-
-### General Document Processing
-- Multi-format document conversion
-- Hierarchical chunking for large documents
-- Quality-based routing for document review
-
-### RAG/Embedding Applications
-- Vector database population
-- Semantic search corpus preparation
-- Token-optimized chunk generation
 
 ## Project Structure
 
 ```
 extraction/
 ├── src/extraction/
-│   ├── core/          # Core utilities (chunking, quality, extraction)
-│   ├── extractors/    # Format-specific extractors
-│   ├── analyzers/     # Domain analyzers
-│   ├── builders/      # EPUB builder for image galleries
-│   ├── scrapers/      # Image scraping utilities
-│   ├── storage/       # S3 upload support
-│   ├── cli/           # CLI entry points
-│   ├── tools/         # Token re-chunking
-│   └── pipelines/     # Specialized pipelines (Vatican)
-├── tests/             # Test suite
-├── docs/              # MkDocs documentation
-├── examples/          # Example scripts
-├── pyproject.toml     # Package configuration
-└── CLAUDE.md          # Detailed development guide
+│   ├── core/           # Models, chunking strategies, quality scoring, noise filtering
+│   ├── extractors/     # EPUB, PDF, MuPDF-PDF, HTML, Markdown, JSON
+│   ├── analyzers/      # CatholicAnalyzer, GenericAnalyzer
+│   ├── _native/        # Python ctypes bindings for Zig/MuPDF library
+│   ├── tools/          # Annotation TUI, capture TUI, corpus/training builders
+│   ├── cli/            # CLI entry points
+│   ├── pipelines/      # Vatican archive pipeline
+│   ├── builders/       # EPUB gallery builder
+│   ├── scrapers/       # Image scraping (static + Playwright)
+│   └── storage/        # S3/R2 upload
+├── cores/              # Zig/MuPDF native library source
+├── tests/              # ~500 tests across 28 files
+├── docs/               # MkDocs documentation source
+└── pyproject.toml
 ```
 
+## Links
+
+- [Documentation](https://hello-world-bfree.github.io/extraction/)
+- [PyPI](https://pypi.org/project/doc-extraction/)
+- [GitHub](https://github.com/hello-world-bfree/extraction)
+- [Issues](https://github.com/hello-world-bfree/extraction/issues)
