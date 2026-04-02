@@ -385,6 +385,22 @@ class BaseExtractor(ABC):
             content_hash=content_hash,
         )
 
+    def _set_provenance_url(
+        self,
+        url: str,
+        parser_version: str,
+        md_schema_version: str,
+        content_hash: str,
+    ) -> None:
+        self.__provenance = Provenance(
+            doc_id=stable_id(url, content_hash),
+            source_file=url,
+            parser_version=parser_version,
+            md_schema_version=md_schema_version,
+            ingestion_ts=datetime.now().isoformat(),
+            content_hash=content_hash,
+        )
+
     def _add_raw_chunk(self, chunk: Dict[str, Any]) -> None:
         """
         Add a raw paragraph chunk for strategy processing.

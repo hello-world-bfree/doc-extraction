@@ -16,6 +16,7 @@ from .pdf import PdfExtractor
 from .html import HtmlExtractor
 from .markdown import MarkdownExtractor
 from .json import JsonExtractor
+from .divine_office import DivineOfficeExtractor
 from .configs import (
     BaseExtractorConfig,
     EpubExtractorConfig,
@@ -23,6 +24,7 @@ from .configs import (
     HtmlExtractorConfig,
     MarkdownExtractorConfig,
     JsonExtractorConfig,
+    DivineOfficeExtractorConfig,
 )
 
 __all__ = [
@@ -32,10 +34,12 @@ __all__ = [
     "HtmlExtractor",
     "MarkdownExtractor",
     "JsonExtractor",
+    "DivineOfficeExtractor",
     "BaseExtractorConfig",
     "EpubExtractorConfig",
     "PdfExtractorConfig",
     "HtmlExtractorConfig",
     "MarkdownExtractorConfig",
     "JsonExtractorConfig",
+    "DivineOfficeExtractorConfig",
 ]

@@ -10,7 +10,7 @@ options. Validation happens in __post_init__ to catch errors early.
 
 import re
 from dataclasses import dataclass
-from typing import Literal
+from typing import List, Literal, Optional
 
 from ..exceptions import InvalidConfigValueError
 
@@ -348,4 +348,24 @@ class JsonExtractorConfig(BaseExtractorConfig):
                 "mode",
                 self.mode,
                 ["import", "rechunk"]
+            )
+
+
+@dataclass
+class DivineOfficeExtractorConfig(HtmlExtractorConfig):
+    date: str = ""
+    hours: Optional[List[str]] = None
+    playwright_timeout: int = 30000
+    wait_for_selector: Optional[str] = None
+    min_chunk_words: int = 5
+    min_paragraph_words: int = 1
+    words_only: bool = True
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.date and not re.fullmatch(r"\d{8}", self.date):
+            raise InvalidConfigValueError("date", self.date, "Must be YYYYMMDD format")
+        if self.playwright_timeout < 1000:
+            raise InvalidConfigValueError(
+                "playwright_timeout", self.playwright_timeout, "Must be >= 1000ms"
             )
