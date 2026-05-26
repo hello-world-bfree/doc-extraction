@@ -199,6 +199,77 @@ class TestSemanticChunkingStrategy:
         for chunk in result:
             assert chunk['hierarchy'].get('level_1', '').lower() not in {'index', 'table of contents'}
 
+    def test_keeps_large_section_with_skippable_heading(self):
+        """A body document mislabeled with a skippable heading (e.g. an epub whose
+        nav names the whole book "Contents") must NOT be discarded. Skipping it
+        wholesale yields 0 chunks and a downstream ParseError("No chunks
+        available"). Only genuine, small navigation sections may be skipped."""
+        strategy = SemanticChunkingStrategy()
+        config = ChunkConfig(min_words=100, max_words=500)
+
+        # ~5000 words of real prose, all stamped level_1="Contents".
+        chunks = [
+            {
+                'paragraph_id': i,
+                'text': ' '.join(['word'] * 50),
+                'word_count': 50,
+                'hierarchy': {'level_1': 'Contents'},
+                'chapter_href': 'body.html',
+                'source_order': i,
+                'source_tag': 'p',
+                'text_length': 250,
+                'cross_references': [],
+                'scripture_references': [],
+                'dates_mentioned': [],
+                'heading_path': 'Contents',
+                'hierarchy_depth': 1,
+                'doc_stable_id': 'doc123',
+                'sentence_count': 1,
+                'sentences': [' '.join(['word'] * 50)],
+                'normalized_text': ' '.join(['word'] * 50),
+            }
+            for i in range(1, 101)  # 100 paras * 50 words = 5000 words
+        ]
+
+        result = strategy.apply(chunks, config)
+
+        assert result, "large 'Contents' body was discarded as if it were a TOC"
+        assert sum(c['source_paragraph_count'] for c in result) == 100
+
+    def test_skips_small_contents_navigation(self):
+        """A small section literally named "Contents" is genuine navigation and
+        should still be skipped (guards against the large-section fix above
+        accidentally keeping real TOCs)."""
+        strategy = SemanticChunkingStrategy()
+        config = ChunkConfig(min_words=1, max_words=500)
+
+        chunks = [
+            {
+                'paragraph_id': i,
+                'text': f'Chapter {i} .... {i}',
+                'word_count': 4,
+                'hierarchy': {'level_1': 'Contents'},
+                'chapter_href': 'toc.html',
+                'source_order': i,
+                'source_tag': 'p',
+                'text_length': 16,
+                'cross_references': [],
+                'scripture_references': [],
+                'dates_mentioned': [],
+                'heading_path': 'Contents',
+                'hierarchy_depth': 1,
+                'doc_stable_id': 'doc123',
+                'sentence_count': 1,
+                'sentences': [f'Chapter {i} .... {i}'],
+                'normalized_text': f'chapter {i} .... {i}',
+            }
+            for i in range(1, 11)  # 10 paras * 4 words = 40 words
+        ]
+
+        result = strategy.apply(chunks, config)
+
+        assert result == [], "small genuine TOC named 'Contents' should be skipped"
+
     def test_aggregates_metadata(self, sample_paragraph_chunks):
         """Should aggregate scripture refs, cross refs, etc."""
         # Add some references to test chunks

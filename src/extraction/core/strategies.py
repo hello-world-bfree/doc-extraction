@@ -33,9 +33,26 @@ class TokenChunkConfig(ChunkConfig):
 
 _SKIPPABLE_SECTIONS = {'index', 'table of contents', 'contents', 'toc'}
 
+# A genuine TOC/index is navigation (a list of links and page numbers) and stays
+# small even for large books. Some epubs, however, name the BODY document itself
+# "Contents" in the nav, which stamps level_1='Contents' on every paragraph; that
+# section then holds the entire book. Only treat a skippable-named section as real
+# front matter when its total prose is below this cap, so a mislabeled body is not
+# discarded wholesale (which produced 0 chunks → ParseError "No chunks available").
+_SKIPPABLE_MAX_WORDS = 2000
+
 
 def is_skippable_section(level_1: str) -> bool:
     return level_1.lower() in _SKIPPABLE_SECTIONS
+
+
+def is_skippable_group(level_1: str, group_chunks: List[Dict[str, Any]]) -> bool:
+    """A section is skipped only if its heading is skippable AND it is small
+    enough to be genuine navigation rather than a mislabeled body document."""
+    if not is_skippable_section(level_1):
+        return False
+    total_words = sum(c.get('word_count', 0) for c in group_chunks)
+    return total_words <= _SKIPPABLE_MAX_WORDS
 
 
 def make_hierarchy_key(hierarchy: Dict[str, str], num_levels: int) -> tuple:
@@ -203,14 +220,14 @@ class SemanticChunkingStrategy(ChunkingStrategy):
 
         for chunk in chunks:
             h = chunk.get('hierarchy', {})
-            level_1 = h.get('level_1', '')
-            if is_skippable_section(level_1):
-                continue
             key = make_hierarchy_key(h, config.preserve_hierarchy_levels)
             hierarchy_groups[key].append(chunk)
 
         merged_chunks = []
         for hierarchy_key, group_chunks in hierarchy_groups.items():
+            level_1 = group_chunks[0].get('hierarchy', {}).get('level_1', '')
+            if is_skippable_group(level_1, group_chunks):
+                continue
             group_chunks.sort(key=lambda c: c.get('paragraph_id', 0))
             merged_chunks.extend(
                 self._merge_group(group_chunks, hierarchy_key, config)
@@ -292,14 +309,14 @@ class TokenAwareChunkingStrategy(ChunkingStrategy):
         hierarchy_groups = defaultdict(list)
         for chunk in chunks:
             h = chunk.get('hierarchy', {})
-            level_1 = h.get('level_1', '')
-            if is_skippable_section(level_1):
-                continue
             key = make_hierarchy_key(h, config.preserve_hierarchy_levels)
             hierarchy_groups[key].append(chunk)
 
         merged_chunks = []
         for hierarchy_key, group_chunks in hierarchy_groups.items():
+            level_1 = group_chunks[0].get('hierarchy', {}).get('level_1', '')
+            if is_skippable_group(level_1, group_chunks):
+                continue
             group_chunks.sort(key=lambda c: c.get('paragraph_id', 0))
             merged_chunks.extend(
                 self._merge_group_tokens(group_chunks, hierarchy_key, config, tokenizer)
