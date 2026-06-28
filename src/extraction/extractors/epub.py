@@ -771,10 +771,14 @@ class EpubExtractor(BaseExtractor):
                     except Exception:
                         continue
 
-                # Skip TOC files (they are used for hierarchy only, not content extraction)
+                # Skip TOC files (they are used for hierarchy only, not content extraction).
+                # Anchor on the basename so genuine content files whose names merely END in
+                # these words (e.g. Leanpub/pandoc's single-spine "all_chapter_contents.xhtml")
+                # are not discarded as navigation.
                 if item:
                     href = self._norm_href(item.get_name())
-                    if re.search(r'(toc|nav|contents)\.x?html?$', href, re.I):
+                    basename = href.rsplit('/', 1)[-1]
+                    if re.match(r'(toc|nav|contents)\.x?html?$', basename, re.I):
                         LOGGER.debug("Skipping TOC file: %s", href)
                         continue
 
