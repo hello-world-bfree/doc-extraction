@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Install uv
       uses: astral-sh/setup-uv@v4
@@ -31,8 +33,14 @@ jobs:
     - name: Generate changelog
       id: changelog
       run: |
+        PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)
+        if [ -n "$PREV_TAG" ]; then
+          RANGE="$PREV_TAG..HEAD"
+        else
+          RANGE="HEAD"
+        fi
         echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
-        git log $(git describe --tags --abbrev=0 HEAD^)..HEAD --pretty=format:"- %s (%h)" >> $GITHUB_OUTPUT
+        git log $RANGE --pretty=format:"- %s (%h)" >> $GITHUB_OUTPUT
         echo "" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
 
