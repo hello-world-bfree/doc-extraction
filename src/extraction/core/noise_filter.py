@@ -22,18 +22,30 @@ _NAV_PATTERNS = [
 _COPYRIGHT_RE = re.compile(r'©|\bcopyright\b|\ball rights reserved\b')
 _ISBN_RE = re.compile(r'\bisbn\b|publisher code|catalog number')
 _INDEX_WORD_RE = re.compile(r'\bindex\b')
-_INDEX_EXCLUDE_RE = re.compile(r'index(?:ing|ed|es)')
+# "Index to Notations"/"Index of Symbols" define things rather than pointing at
+# pages, so they are content; "indexing"/"indexed" are ordinary verbs.
+_INDEX_EXCLUDE_RE = re.compile(r'index(?:ing|ed|es)|index\s+(?:to|of)\s+(?:notation|symbol)')
 _NOTES_WORD_RE = re.compile(r'\bnotes\b')
 _NOTES_EXCLUDE_RE = re.compile(r'note(?:d|worthy)')
-_GEO_MAP_RE = re.compile(r'\bgeography\b|\bmap(?:s)?\b')
+# Only a standalone geography/maps section is back matter. Bare \bmap\b matched
+# "Road Map for Inference Procedures" and dropped real content.
+_GEO_MAP_RE = re.compile(r'\bgeography\b|^\s*maps?\s*$|\b(?:list|index)\s+of\s+maps\b')
 _ABOUT_PUBLISHER_RE = re.compile(r'^about\s+(?!the\s+author)')
+# Anchored so "discovering"/"recovery" and prose about a container's contents do
+# not match. "Contents" as a whole label is a TOC; "Cover" likewise.
+_CONTENTS_LABEL_RE = re.compile(r'^\s*(?:table\s+of\s+)?contents\s*$')
+_COVER_LABEL_RE = re.compile(r'^\s*(?:front\s+|back\s+)?cover(?:\s+page)?\s*$')
 _PUBLISHER_NAME_RE = re.compile(r'publishing|press|books|editions|media|house')
 _DEDICATION_PATTERNS = [
     re.compile(r'^\s*dedicated to\b'),
-    re.compile(r'^\s*for\s+(my|our|the)\s+\w+'),
+    # "For my/our <person>" is a dedication; "For the second model we choose..."
+    # is body prose. Only the my/our possessives are safe, and a dedication is a
+    # short standalone line, so require the sentence to end soon after.
+    re.compile(r'^\s*for\s+(my|our)\s+\w+'),
+    re.compile(r'^\s*for\s+the\s+\w+(?:\s+\w+){0,3}[.,]?\s*$'),
     re.compile(r'^\s*for\s+\w+\s*,\s*(my|our|the)'),
     re.compile(r'^\s*in memory of\b'),
-    re.compile(r'^\s*to\s+(my|our|the)\s+\w+'),
+    re.compile(r'^\s*to\s+(my|our)\s+\w+'),
 ]
 _CITATION_INDICATOR_PATTERNS = [
     re.compile(r'\(\d{4}\)', re.IGNORECASE),
@@ -216,8 +228,15 @@ class NoiseFilter:
             "editor's preface",
             "editors' preface",
             'preface',
+            'foreword',
             'acknowledgments',
             'acknowledgements',
+            'acknowledgment',
+            'acknowledgement',
+            'copyright',
+            'front cover',
+            'epigraph',
+            'colophon',
         }
         for label in hierarchy_labels:
             if label in front_matter_toc_labels:
@@ -234,12 +253,15 @@ class NoiseFilter:
 
         # Pattern 4: Back matter TOC labels (hierarchy-based)
         # Uses substring matching for flexibility
+        # NOTE: 'glossary' is deliberately absent — a glossary defines terms, which
+        # is standalone informational value. See tests/fixtures/noncore_taxonomy.json.
         back_matter_toc_labels = {
             'suggested resources',
             'further reading',
             'recommended reading',
+            'works cited',
             'bibliography',
-            'glossary',
+            'references',
             'general index',
             'subject index',
             'scripture index',
@@ -272,6 +294,13 @@ class NoiseFilter:
             return (True, 'back_matter_toc_label')
         if _NOTES_WORD_RE.search(level_1) and not _NOTES_EXCLUDE_RE.search(level_1):
             return (True, 'back_matter_toc_label')
+
+        # "Contents"/"Table of Contents" and standalone cover pages. Bounded rather
+        # than substring-matched: "cover" appears inside "discovering"/"recovery",
+        # and "contents" inside chapter prose about a container's contents.
+        for label in hierarchy_labels:
+            if _CONTENTS_LABEL_RE.match(label) or _COVER_LABEL_RE.match(label):
+                return (True, 'front_matter_toc_label')
 
         # Pattern 6: Book outlines (hierarchy-based)
         if any('outline' in label for label in hierarchy_labels):

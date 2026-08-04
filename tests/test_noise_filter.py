@@ -258,12 +258,18 @@ class TestFrontMatterDetection:
 class TestBackMatterDetection:
     """Tests for back matter detection."""
 
-    def test_detects_glossary(self):
-        """Should detect glossary sections."""
+    def test_treats_glossary_as_content(self):
+        """A glossary defines terms, so it is content rather than back matter.
+
+        Changed deliberately: 'glossary' used to sit in back_matter_toc_labels. Its
+        definitions have standalone informational value — they are the thing a reader
+        searches for — so a glossary is now kept. See
+        tests/fixtures/noncore_taxonomy.json for the governing rules.
+        """
         chunk = {"hierarchy": {"level_1": "glossary"}, "text": "amen: Hebrew term..."}
         is_bm, reason = NoiseFilter.is_front_matter(chunk)
-        assert is_bm is True
-        assert reason == 'back_matter_toc_label'
+        assert is_bm is False
+        assert reason == 'content'
 
     def test_detects_index_sections(self):
         """Should detect various index sections."""

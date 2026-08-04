@@ -1,0 +1,257 @@
+{
+  "_about": {
+    "purpose": "Frozen eval fixture for core/non-core document classification. This file IS the definition of correct; prose rationale lives in the library repo at openspec/work/noncore-content-classification/issues/02-taxonomy-and-unit.md.",
+    "unit": "spine document (chapter_href) — one keep/drop verdict each",
+    "verdicts": {
+      "keep": "retain for RAG retrieval",
+      "drop": "exclude from RAG retrieval"
+    },
+    "rules": {
+      "1_informational_value": "Drop only if the text has no standalone informational value: a pointer into the physical book (page numbers, 'see X'), or a bare answer/label list whose substance lives elsewhere. Keep anything that explains, defines, derives, or tabulates actual data.",
+      "2_front_matter_position": "Publisher/apparatus front matter drops even when it is subject-relevant prose. This rule DELIBERATELY CONTRADICTS rule 1 and overrides it — do not 'fix' the inconsistency without re-deciding it. Sampled prefaces genuinely do describe book scope and audience."
+    },
+    "scoring": [
+      "Report precision on the 'drop' class separately from recall — a false positive destroys real content, a false negative only leaves junk behind.",
+      "Split rule_1 from rule_2 scores. Rule 2 is a keyword list and should score ~1.0 trivially; rule 1 is the hard judgment. A blended number lets rule 2 mask rule 1."
+    ],
+    "known_bias": "Cases are drawn from 8 equations/code-heavy technical books (TAOCP v1, Algorithms 4e, Applied Statistics for Engineers, Computational Mathematics 2e, Essential Mathematics for Games, Grokking Algorithms 2e, Discovering Statistics Using R, Network Algorithmics 2e). NO Packt, O'Reilly, Apress, or No Starch — 62% of the technical corpus by publisher. A good score here is NOT evidence of corpus-wide accuracy until widened.",
+    "source_books": {
+      "5571": "Art of Computer Programming, Vol 1 (Pearson/Addison-Wesley)",
+      "5547": "Algorithms, 4th Edition (Pearson/Addison-Wesley)",
+      "5954": "Applied Statistics and Probability for Engineers, 6e (Wiley)",
+      "5824": "Computational Mathematics, 2nd Edition (CRC/Chapman)",
+      "5945": "Essential Mathematics for Games and Interactive Applications (CRC/Taylor & Francis)",
+      "2917": "Grokking Algorithms, 2nd Edition (Manning)",
+      "3163": "Discovering Statistics Using R (SAGE)",
+      "5563": "Network Algorithmics, 2nd Edition (Elsevier/Morgan Kaufmann)"
+    }
+  },
+
+  "cases": [
+    {
+      "id": "index-page-pointers",
+      "label": "Index",
+      "text": "abstraction, 42, 87, 91; algorithm, 12, 15; amortized analysis, 201; array, 8, 33, 47",
+      "verdict": "drop",
+      "rule": 1,
+      "book": "5547",
+      "note": "Pure pointer into the physical book. Meaningless without page images."
+    },
+    {
+      "id": "bibliography-citations",
+      "label": "Bibliography",
+      "text": "Knuth, D. E. (1997). The Art of Computer Programming, Volume 1. Addison-Wesley. Cormen, T. H., et al. (2009). Introduction to Algorithms, 3rd ed. MIT Press.",
+      "verdict": "drop",
+      "rule": 1,
+      "book": "5954",
+      "note": "Citation list. Confirmed NOT to feed ExtractCitations, which reads only the first 100 chunks of a book."
+    },
+    {
+      "id": "references-per-chapter-tail",
+      "label": "References",
+      "text": "[1] V. Srinivasan and G. Varghese. Fast address lookups using controlled prefix expansion. ACM Transactions on Computer Systems, 17(1):1-40, 1999.",
+      "verdict": "drop",
+      "rule": 1,
+      "book": "5563",
+      "note": "Elsevier house style: every chapter ends in References. 'references' was the single highest-value missing label."
+    },
+    {
+      "id": "further-reading-tail",
+      "label": "Further reading",
+      "text": "Field, A. P. (2000). Discovering statistics using SPSS for Windows. London: Sage. Howell, D. C. (2002). Statistical methods for psychology (5th edition). Duxbury.",
+      "verdict": "drop",
+      "rule": 1,
+      "book": "3163",
+      "note": "SAGE house style: every chapter ends in Further reading. Used 20 times in this one book."
+    },
+    {
+      "id": "bare-answer-key",
+      "label": "Appendix C: Answers to Selected Exercises",
+      "text": "3-49. (a) 1 (b) 0.5 (c) 0.5 (d) 0.5  3-51. (a) 1 (b) 0.75 (c) 0.25 (d) 0.25  (e) 0 (f) 0  3-57. mu = 2, sigma2 = 2  3-59. mu = 0, sigma2 = 1.5",
+      "verdict": "drop",
+      "rule": 1,
+      "book": "5954",
+      "note": "CONTRAST WITH substantive-answer-key: same category, opposite verdict. This is a bare list; the substance lives in the exercises."
+    },
+    {
+      "id": "table-titles-only",
+      "label": "Appendix A: Statistical Tables and Charts",
+      "text": "TABLE I Summary of Common Probability Distributions  TABLE II Cumulative Binomial Probabilities  TABLE III Cumulative Standard Normal Distribution  TABLE IV Percentage Points of the Chi-Squared Distribution",
+      "verdict": "drop",
+      "rule": 1,
+      "book": "5954",
+      "note": "Only table TITLES, no data. Rule 1 keeps tabulated data; a list of table names is a pointer."
+    },
+    {
+      "id": "substantive-answer-key",
+      "label": "Answers to Exercises",
+      "text": "1. t <- a, a <- b, b <- c, c <- d, d <- t.  2. After the first time, the values of the variables m and n are the previous values of n and r, respectively; and n > r.  3. Algorithm F (Euclid's algorithm). Given two positive integers m and n, find their greatest common divisor.",
+      "verdict": "keep",
+      "rule": 1,
+      "book": "5571",
+      "note": "CONTRAST WITH bare-answer-key: same category, opposite verdict. Knuth's answers derive and explain."
+    },
+    {
+      "id": "notation-index",
+      "label": "Appendix B. Index to Notations",
+      "text": "The notation A[i] denotes element i of array A. The notation lg n denotes the base-2 logarithm. The notation x mod y denotes the remainder of x divided by y.",
+      "verdict": "keep",
+      "rule": 1,
+      "book": "5571",
+      "note": "Says 'Index' but DEFINES notation rather than pointing at pages. Regression guard for the \\bindex\\b false positive."
+    },
+    {
+      "id": "glossary-definitions",
+      "label": "Glossary",
+      "text": "2k factorial experiment. A full factorial experiment with k factors and all factors tested at only two levels (settings) each. Bias. An effect that systematically distorts a statistical result.",
+      "verdict": "keep",
+      "rule": 1,
+      "book": "5954",
+      "note": "Real definitions. NOTE: 'glossary' currently sits in back_matter_toc_labels and is wrongly dropped — this case is the regression guard for that fix."
+    },
+    {
+      "id": "appendix-real-chapter",
+      "label": "Appendix A. Performance of AVL trees",
+      "text": "AVL trees guarantee O(log n) lookup by keeping the height difference between subtrees at most one. The rebalancing operation after an insert requires at most two rotations.",
+      "verdict": "keep",
+      "rule": 1,
+      "book": "2917",
+      "note": "CONTRAST WITH bibliography-citations: both labelled 'appendix', opposite verdicts. This is an ordinary technical chapter."
+    },
+    {
+      "id": "exercises-problem-statements",
+      "label": "Exercises",
+      "text": "1.1 Suppose you have a sorted list of 128 names, and you're searching through it using binary search. What's the maximum number of steps it would take? 1.2 Suppose you double the size of the list.",
+      "verdict": "keep",
+      "rule": 1,
+      "book": "2917",
+      "note": "Real problem statements. 'exercises' is the 4th-commonest non-body label (14 occurrences) and must NOT be added to the drop vocabulary."
+    },
+    {
+      "id": "introduction-first-chapter",
+      "label": "Introduction",
+      "text": "This chapter introduces the fundamental techniques of algorithm analysis, including asymptotic notation and the substitution method for solving recurrences.",
+      "verdict": "keep",
+      "rule": 1,
+      "book": "5547",
+      "note": "2nd-commonest non-body label (21 occurrences) and usually a real first chapter. Explicitly NOT covered by rule 2."
+    },
+    {
+      "id": "road-map-not-geography",
+      "label": "Road Map for Inference Procedures",
+      "text": "Use this road map to select the appropriate inference procedure for your data: for a single mean with known variance, use the z-test.",
+      "verdict": "keep",
+      "rule": 1,
+      "book": "5954",
+      "note": "Regression guard: \\bmap(?:s)?\\b fired here, dropping 9 real chunks."
+    },
+    {
+      "id": "for-the-not-dedication",
+      "label": "Chapter 3",
+      "text": "For the second model we choose a linear form, which simplifies the estimation of the coefficients considerably.",
+      "verdict": "keep",
+      "rule": 1,
+      "book": "5954",
+      "note": "Regression guard: the dedication regex ^for\\s+(my|our|the)\\s+\\w+ fired on 'For the second model'."
+    },
+    {
+      "id": "indexing-not-index",
+      "label": "Indexing clients",
+      "text": "Clients are indexed by their primary key so that lookups avoid a full table scan.",
+      "verdict": "keep",
+      "rule": 1,
+      "book": "5563",
+      "note": "Regression guard for 'index' in label matching 'indexing'. Already passing; keep it passing."
+    },
+    {
+      "id": "preface-substantive",
+      "label": "Preface",
+      "text": "This book is intended to survey the most important computer algorithms in use today, and to teach fundamental techniques to the growing number of people in need of knowing them.",
+      "verdict": "drop",
+      "rule": 2,
+      "book": "5547",
+      "note": "RULE 2 OVERRIDE. This text IS subject-relevant and rule 1 alone would keep it. Dropped on position. Brandon's explicit call."
+    },
+    {
+      "id": "foreword",
+      "label": "Foreword",
+      "text": "When George invited me in 2015 to help with the second edition, I had been teaching network algorithmics for a decade.",
+      "verdict": "drop",
+      "rule": 2,
+      "book": "5563",
+      "note": "RULE 2 OVERRIDE."
+    },
+    {
+      "id": "acknowledgments",
+      "label": "Acknowledgments",
+      "text": "I am grateful to the many colleagues who read drafts of this manuscript and offered corrections, especially the students of CS 226.",
+      "verdict": "drop",
+      "rule": 2,
+      "book": "5547",
+      "note": "RULE 2. Prose about people, not the subject."
+    },
+    {
+      "id": "copyright-boilerplate",
+      "label": "Copyright",
+      "text": "Copyright (c) 2011 Pearson Education, Inc. All rights reserved. ISBN-13: 978-0-321-57351-3",
+      "verdict": "drop",
+      "rule": 2,
+      "book": "5547",
+      "note": "RULE 2. 'copyright' as a hierarchy label was a confirmed miss in the survey."
+    },
+    {
+      "id": "dedication",
+      "label": "Dedication",
+      "text": "For my wife, without whom none of this would have been possible.",
+      "verdict": "drop",
+      "rule": 2,
+      "book": "5571",
+      "note": "RULE 2. Already caught by the dedication patterns."
+    },
+    {
+      "id": "praise-endorsements",
+      "label": "Praise for Algorithms",
+      "text": "Praise for this book: a masterpiece of clarity that belongs on every programmer's shelf. -- Reviewer, Computing Today",
+      "verdict": "drop",
+      "rule": 2,
+      "book": "5547",
+      "note": "RULE 2. Already caught by endorsement keywords."
+    },
+    {
+      "id": "title-page",
+      "label": "Title page",
+      "text": "The Art of Computer Programming  Volume 1  Fundamental Algorithms  Third Edition  DONALD E. KNUTH",
+      "verdict": "drop",
+      "rule": 2,
+      "book": "5571",
+      "note": "RULE 2."
+    },
+    {
+      "id": "table-of-contents",
+      "label": "Contents",
+      "text": "Chapter 1 Basic Concepts 1  1.1 Algorithms 1  1.2 Mathematical Preliminaries 10  1.3 MIX 124",
+      "verdict": "drop",
+      "rule": 2,
+      "book": "5571",
+      "note": "RULE 2. 'contents' as a hierarchy label was a confirmed miss in the survey."
+    },
+    {
+      "id": "body-prose-control",
+      "label": "Chapter 3 / Binary Search Trees",
+      "text": "A binary search tree is a data structure where each node has at most two children, and the left subtree contains only keys less than the node's key.",
+      "verdict": "keep",
+      "rule": 1,
+      "book": "5547",
+      "note": "Control case: ordinary body prose must never be dropped."
+    },
+    {
+      "id": "body-code-control",
+      "label": "Chapter 5 / Quicksort",
+      "text": "def quicksort(arr, lo, hi):\n    if lo < hi:\n        p = partition(arr, lo, hi)\n        quicksort(arr, lo, p - 1)\n        quicksort(arr, p + 1, hi)",
+      "verdict": "keep",
+      "rule": 1,
+      "book": "5547",
+      "note": "Control case: code chunks must never be dropped. Chunk typing is a separate, already-solved concern."
+    }
+  ]
+}
