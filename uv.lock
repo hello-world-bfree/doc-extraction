@@ -266,7 +266,7 @@ wheels = [
 
 [[package]]
 name = "doc-extraction"
-version = "2.5.1"
+version = "2.5.4"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },

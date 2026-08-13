@@ -21,7 +21,14 @@ _NAV_PATTERNS = [
 ]
 _COPYRIGHT_RE = re.compile(r'©|\bcopyright\b|\ball rights reserved\b')
 _ISBN_RE = re.compile(r'\bisbn\b|publisher code|catalog number')
-_INDEX_WORD_RE = re.compile(r'\bindex\b')
+# A back-matter index is a STANDALONE label ("Index", "General Index", "Index of
+# Sidebars") — not any heading that happens to contain the word. Bare \bindex\b
+# matched "Item 17: Avoid Numeric Index Signatures" and "Chapter 4: Index Design",
+# dropping real instruction; databases and TypeScript books discuss indexes
+# constantly. Same failure and same fix as _GEO_MAP_RE's bare \bmap\b below.
+_INDEX_WORD_RE = re.compile(
+    r'^\s*(?:[a-z]+\s+)?index(?:\s+(?:to|of)\s+[a-z\s]+)?\s*$'
+)
 # "Index to Notations"/"Index of Symbols" define things rather than pointing at
 # pages, so they are content; "indexing"/"indexed" are ordinary verbs.
 _INDEX_EXCLUDE_RE = re.compile(r'index(?:ing|ed|es)|index\s+(?:to|of)\s+(?:notation|symbol)')
@@ -43,7 +50,14 @@ _DEDICATION_PATTERNS = [
     # short standalone line, so require the sentence to end soon after.
     re.compile(r'^\s*for\s+(my|our)\s+\w+'),
     re.compile(r'^\s*for\s+the\s+\w+(?:\s+\w+){0,3}[.,]?\s*$'),
-    re.compile(r'^\s*for\s+\w+\s*,\s*(my|our|the)'),
+    # "For Alice, my wife" is a dedication. The old form allowed `the` as the
+    # possessive and had no length bound, so it matched "For example, the
+    # following copyright comment..." and "For structs, the struct's field
+    # names..." — 49 chunks of ordinary body prose in one 13-book sample, zero
+    # of them dedications. "For X, the ..." is a normal way to open a sentence,
+    # so `the` is dropped; only my/our survive, and the line must END soon
+    # after, like every other dedication pattern here.
+    re.compile(r'^\s*for\s+\w+\s*,\s*(?:my|our)\s+\w+(?:\s+\w+){0,3}[.!]?\s*$'),
     re.compile(r'^\s*in memory of\b'),
     re.compile(r'^\s*to\s+(my|our)\s+\w+'),
 ]

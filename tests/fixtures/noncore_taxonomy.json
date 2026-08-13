@@ -26,7 +26,6 @@
       "5563": "Network Algorithmics, 2nd Edition (Elsevier/Morgan Kaufmann)"
     }
   },
-
   "cases": [
     {
       "id": "index-page-pointers",
@@ -252,6 +251,51 @@
       "rule": 1,
       "book": "5547",
       "note": "Control case: code chunks must never be dropped. Chunk typing is a separate, already-solved concern."
+    },
+    {
+      "id": "index-in-chapter-title-not-index",
+      "label": "Item 17: Avoid Numeric Index Signatures",
+      "text": "Use interfaces rather than numeric index signatures for arrays. Prefer Array, tuple, or ArrayLike types when you need to index into a sequence.",
+      "verdict": "keep",
+      "rule": 1,
+      "book": "2",
+      "note": "Regression guard: _INDEX_WORD_RE was a bare \\bindex\\b, so it fired on any heading CONTAINING 'index'. Dropped 132 real chunks of Effective TypeScript. A back-matter index is a standalone label, not a phrase."
+    },
+    {
+      "id": "index-design-chapter-not-index",
+      "label": "Chapter 4: Index Design",
+      "text": "A B-tree index speeds up equality and range lookups at the cost of write amplification. Choose the column order to match your most selective predicates.",
+      "verdict": "keep",
+      "rule": 1,
+      "book": "5563",
+      "note": "Same bare-\\bindex\\b failure, hit across the 35-book Databases collection where 'index' is a core topic."
+    },
+    {
+      "id": "for-example-the-not-dedication",
+      "label": "2 Code and project organization > Summary",
+      "text": "For example, the following copyright comment will not be visible in the produced documentation because it sits above the package clause.",
+      "verdict": "keep",
+      "rule": 1,
+      "book": "1",
+      "note": "Regression guard: dedication pattern ^for\\s+\\w+\\s*,\\s*(my|our|the) fired on 'For example, the'. 49 chunks of body prose in one 13-book sample, zero dedications. 'the' dropped from the possessives; line must now end soon after."
+    },
+    {
+      "id": "for-structs-the-not-dedication",
+      "label": "Chapter 7",
+      "text": "For structs, the struct's field names are used as keys unless a json tag overrides them.",
+      "verdict": "keep",
+      "rule": 1,
+      "book": "1",
+      "note": "Same 'For X, the ...' prose opener. Common enough in technical writing that it must stay guarded."
+    },
+    {
+      "id": "real-dedication-with-comma",
+      "label": "Dedication",
+      "text": "For Alice, my wife and best friend.",
+      "verdict": "drop",
+      "rule": 2,
+      "book": "5824",
+      "note": "The case the ^for \\w+, (my|our) pattern legitimately targets. Narrowing it must not lose this."
     }
   ]
 }
