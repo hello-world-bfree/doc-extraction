@@ -7,7 +7,7 @@ import sys
 from .app import AnnotationApp
 from .core.chunk_loader import ChunkLoader
 from .core.session import AnnotationSession
-from .core.dataset_export import DatasetExporter
+from .core.dataset_export import DatasetExporter, expand_chunks_with_splits
 
 
 def export_only(
@@ -39,9 +39,13 @@ def export_only(
         for chunk_id, ann in session.annotations.items()
     }
 
+    expanded_chunks = expand_chunks_with_splits(
+        chunks, session.split_chunks, session.edited_chunks, session.merged_chunks
+    )
+
     if export_type == "jsonl":
         count = DatasetExporter.export_jsonl(
-            chunks,
+            expanded_chunks,
             annotations,
             output_path,
         )
@@ -50,7 +54,7 @@ def export_only(
     elif export_type == "split":
         output_dir = output_path.parent
         train_count, test_count = DatasetExporter.export_train_test_split(
-            chunks,
+            expanded_chunks,
             annotations,
             output_dir,
         )
@@ -59,7 +63,7 @@ def export_only(
     elif export_type == "issues":
         output_dir = output_path.parent / "issues"
         counts = DatasetExporter.export_by_issues(
-            chunks,
+            expanded_chunks,
             annotations,
             output_dir,
         )
@@ -69,7 +73,7 @@ def export_only(
     elif export_type == "labels":
         output_dir = output_path.parent / "labels"
         counts = DatasetExporter.export_by_labels(
-            chunks,
+            expanded_chunks,
             annotations,
             output_dir,
         )

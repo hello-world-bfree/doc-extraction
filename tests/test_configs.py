@@ -83,7 +83,7 @@ class TestEpubExtractorConfig:
         assert config.min_block_words == 30
         assert config.preserve_hierarchy_across_docs is False
         assert config.reset_depth == 2
-        assert config.class_denylist == r"^(?:calibre\d+|note|footnote)$"
+        assert config.class_denylist == r"^(?:note|footnote)$"
         assert config.filter_tiny_chunks == "conservative"
 
     def test_inherits_base_config(self):

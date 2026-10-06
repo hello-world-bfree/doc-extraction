@@ -6,10 +6,13 @@ from textual.containers import Horizontal, Vertical, Container
 from textual.widgets import Static, TextArea, Input, Button
 from textual.binding import Binding
 from textual.reactive import reactive
-from typing import Optional
+from typing import Optional, Dict
 import difflib
 
 from ..core.session import EditedChunk
+
+
+HIERARCHY_LEVELS = ("level_1", "level_2", "level_3", "level_4", "level_5", "level_6")
 
 
 class EditModal(ModalScreen[Optional[EditedChunk]]):
@@ -54,6 +57,18 @@ class EditModal(ModalScreen[Optional[EditedChunk]]):
         margin-bottom: 1;
     }
 
+    #hierarchy_section {
+        height: auto;
+        border: solid $primary;
+        margin-bottom: 1;
+        padding: 0 1;
+    }
+
+    .hierarchy_input {
+        height: 3;
+        margin: 0;
+    }
+
     #button_row {
         height: auto;
         align: center middle;
@@ -94,15 +109,23 @@ class EditModal(ModalScreen[Optional[EditedChunk]]):
         chunk_id: str,
         original_text: str,
         current_edit: Optional[EditedChunk] = None,
+        original_hierarchy: Optional[Dict[str, str]] = None,
         **kwargs
     ):
         super().__init__(**kwargs)
         self.chunk_id = chunk_id
         self.original_text = original_text
         self.current_edit = current_edit
+        self.original_hierarchy: Dict[str, str] = dict(original_hierarchy or {})
+
+        if current_edit and current_edit.edited_hierarchy:
+            self.initial_hierarchy = dict(current_edit.edited_hierarchy)
+        else:
+            self.initial_hierarchy = dict(self.original_hierarchy)
 
         self.edited_textarea: Optional[TextArea] = None
         self.reason_input: Optional[Input] = None
+        self.hierarchy_inputs: Dict[str, Input] = {}
 
     def compose(self) -> ComposeResult:
         """Compose edit modal layout."""
@@ -130,6 +153,19 @@ class EditModal(ModalScreen[Optional[EditedChunk]]):
                     show_line_numbers=False,
                 )
                 yield self.edited_textarea
+
+            with Vertical(id="hierarchy_section"):
+                yield Static("Hierarchy (L1 → L6, blank = none)", classes="section-title")
+                for level in HIERARCHY_LEVELS:
+                    value = self.initial_hierarchy.get(level, "")
+                    inp = Input(
+                        value=value,
+                        placeholder=level,
+                        classes="hierarchy_input",
+                        id=f"hier_{level}",
+                    )
+                    self.hierarchy_inputs[level] = inp
+                    yield inp
 
             with Vertical(id="reason_section"):
                 yield Static("Edit Reason (Optional - auto-generated from diff if blank)", classes="section-title")
@@ -219,6 +255,16 @@ class EditModal(ModalScreen[Optional[EditedChunk]]):
             timeout=10
         )
 
+    def _current_hierarchy(self) -> Dict[str, str]:
+        return {
+            level: inp.value.strip()
+            for level, inp in self.hierarchy_inputs.items()
+        }
+
+    def _hierarchy_changed(self, edited_hierarchy: Dict[str, str]) -> bool:
+        original = {lvl: self.original_hierarchy.get(lvl, "") for lvl in HIERARCHY_LEVELS}
+        return edited_hierarchy != original
+
     def action_save_edit(self) -> None:
         """Save edit and return result."""
         if not self.edited_textarea or not self.reason_input:
@@ -226,19 +272,26 @@ class EditModal(ModalScreen[Optional[EditedChunk]]):
 
         edited_text = self.edited_textarea.text
         edit_reason = self.reason_input.value.strip()
+        edited_hierarchy = self._current_hierarchy()
+        hierarchy_changed = self._hierarchy_changed(edited_hierarchy)
+        text_changed = edited_text != self.original_text
 
-        if edited_text == self.original_text:
-            self.app.notify("No changes made to text", severity="warning")
+        if not text_changed and not hierarchy_changed:
+            self.app.notify("No changes made", severity="warning")
             return
 
-        # Auto-generate reason from diff if not provided
         if not edit_reason:
-            edit_reason = self._generate_diff_summary(self.original_text, edited_text)
+            if text_changed:
+                edit_reason = self._generate_diff_summary(self.original_text, edited_text)
+            if hierarchy_changed:
+                hier_summary = "hierarchy updated"
+                edit_reason = f"{edit_reason}, {hier_summary}" if edit_reason else hier_summary
 
         result = {
             'chunk_id': self.chunk_id,
             'edited_text': edited_text,
             'edit_reason': edit_reason,
+            'edited_hierarchy': edited_hierarchy if hierarchy_changed else None,
         }
         self.dismiss(result)
 

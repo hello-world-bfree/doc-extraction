@@ -215,19 +215,18 @@ class VaticanArchiveProcessor:
 
         # Import extraction infrastructure
         try:
+            from ...extractors.configs import HtmlExtractorConfig
             from ...extractors.html import HtmlExtractor
             from ...analyzers.catholic import CatholicAnalyzer
             from ...core.output import write_outputs
             from ...core.noise_filter import NoiseFilter
+            from .cleaning import clean_vatican_soup
         except ImportError as e:
             LOGGER.error("Failed to import extraction modules: %s", e)
             return 0
 
         success_count = 0
-        config = {
-            "min_paragraph_words": 1,
-            "preserve_links": False,
-        }
+        config = HtmlExtractorConfig(min_paragraph_words=1, preserve_links=False)
 
         analyzer = CatholicAnalyzer()
         temp_output_dir = self.work_dir / "outputs" / "temp"
@@ -240,7 +239,7 @@ class VaticanArchiveProcessor:
                     continue
 
                 # Extract with HTML extractor
-                extractor = HtmlExtractor(download_path, config)
+                extractor = HtmlExtractor(download_path, config, soup_cleaner=clean_vatican_soup)
                 extractor.load()
                 extractor.parse()
                 metadata = extractor.extract_metadata()

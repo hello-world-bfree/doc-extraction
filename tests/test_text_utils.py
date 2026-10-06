@@ -128,3 +128,30 @@ if __name__ == "__main__":
 
     print(f"\n{passed} passed, {failed} failed")
     sys.exit(0 if failed == 0 else 1)
+
+
+def test_clean_text_keeps_one_letter_words_before_capitals():
+    """'O LORD' merged to 'OLORD' corrupts psalm text and breaks every search for LORD."""
+    assert clean_text("the holy place, O LORD, that your hands") == "the holy place, O LORD, that your hands"
+    assert clean_text("I AM WHO AM") == "I AM WHO AM"
+    assert clean_text("A NEW SONG") == "A NEW SONG"
+
+
+def test_clean_text_still_joins_split_small_caps():
+    assert clean_text("The L ORD is my shepherd") == "The LORD is my shepherd"
+    assert clean_text("S E C O N D BOOK") == "SECOND BOOK"
+
+
+def test_clean_text_keeps_spaces_around_straight_quotes():
+    """Straight quotes open and close; stripping both sides glued 22k book chunks: 'Flesh:"Who His own self,"writes'."""
+    assert clean_text('in His own Flesh: "Who His own self," writes St. Peter, "bore our sins') == \
+        'in His own Flesh: "Who His own self," writes St. Peter, "bore our sins'
+    assert clean_text('the term "the same" is a logical relation') == 'the term "the same" is a logical relation'
+    assert clean_text("the word 'grace' means gift") == "the word 'grace' means gift"
+    assert clean_text("the apostles' teaching") == "the apostles' teaching"
+
+
+def test_clean_text_still_removes_stray_spaces_inside_quotes_and_brackets():
+    assert clean_text('he said " Go home " and left') == 'he said "Go home" and left'
+    assert clean_text("( see above )") == "(see above)"
+    assert clean_text("the end ." ) == "the end."

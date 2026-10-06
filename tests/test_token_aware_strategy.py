@@ -85,7 +85,7 @@ class TestTokenAwareRequiresTokenConfig:
 
     def test_accepts_token_config(self):
         strategy = TokenAwareChunkingStrategy()
-        config = TokenChunkConfig()
+        config = TokenChunkConfig(allow_word_estimate=True)
         result = strategy.apply([], config)
         assert result == []
 
@@ -126,6 +126,7 @@ class TestCodeAsMergeBoundary:
     def test_code_not_merged_with_prose(self):
         strategy = TokenAwareChunkingStrategy()
         config = TokenChunkConfig(
+            allow_word_estimate=True,
             max_tokens=10000,
             min_tokens=1,
             overlap_percent=0.0,
@@ -145,6 +146,7 @@ class TestCodeAsMergeBoundary:
     def test_code_emitted_standalone_regardless_of_size(self):
         strategy = TokenAwareChunkingStrategy()
         config = TokenChunkConfig(
+            allow_word_estimate=True,
             max_tokens=10000,
             min_tokens=1000,
             overlap_percent=0.0,
@@ -159,6 +161,7 @@ class TestCodeAsMergeBoundary:
     def test_code_flushes_prose_accumulator(self):
         strategy = TokenAwareChunkingStrategy()
         config = TokenChunkConfig(
+            allow_word_estimate=True,
             max_tokens=10000,
             min_tokens=1,
             overlap_percent=0.0,
@@ -182,6 +185,7 @@ class TestContentTypePropagation:
     def test_same_type_propagated(self):
         strategy = TokenAwareChunkingStrategy()
         config = TokenChunkConfig(
+            allow_word_estimate=True,
             max_tokens=10000,
             min_tokens=1,
             overlap_percent=0.0,
@@ -214,6 +218,7 @@ class TestOverlapWithinSections:
     def test_overlap_text_only_not_metadata(self):
         strategy = TokenAwareChunkingStrategy()
         config = TokenChunkConfig(
+            allow_word_estimate=True,
             max_tokens=40,
             min_tokens=1,
             overlap_percent=0.30,
@@ -233,6 +238,7 @@ class TestOverlapWithinSections:
     def test_no_overlap_across_sections(self):
         strategy = TokenAwareChunkingStrategy()
         config = TokenChunkConfig(
+            allow_word_estimate=True,
             max_tokens=40,
             min_tokens=1,
             overlap_percent=0.30,
@@ -250,6 +256,7 @@ class TestOverlapWithinSections:
     def test_zero_overlap_config(self):
         strategy = TokenAwareChunkingStrategy()
         config = TokenChunkConfig(
+            allow_word_estimate=True,
             max_tokens=40,
             min_tokens=1,
             overlap_percent=0.0,
@@ -267,7 +274,7 @@ class TestSkipsIndexSections:
 
     def test_skips_index(self):
         strategy = TokenAwareChunkingStrategy()
-        config = TokenChunkConfig(min_tokens=1, overlap_percent=0.0)
+        config = TokenChunkConfig(allow_word_estimate=True, min_tokens=1, overlap_percent=0.0)
         chunks = [
             _make_prose(1, 20, hierarchy={"level_1": "Index", "level_2": "", "level_3": ""}),
             _make_prose(2, 20, hierarchy={"level_1": "Chapter 1", "level_2": "", "level_3": ""}),
@@ -281,6 +288,7 @@ class TestDocumentOrderPreserved:
     def test_maintains_order(self):
         strategy = TokenAwareChunkingStrategy()
         config = TokenChunkConfig(
+            allow_word_estimate=True,
             max_tokens=10000,
             min_tokens=1,
             overlap_percent=0.0,

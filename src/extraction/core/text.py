@@ -24,10 +24,16 @@ _WHITESPACE_RE = re.compile(r'\s+')
 _VERSE_NUM_RE = re.compile(r'(\b\d+)([A-Z][a-z])')
 _NUM_DOT_RE = re.compile(r'(\b\d+)\s+\.')
 _SPACE_BEFORE_PUNCT_RE = re.compile(r'\s+([,;:!?])')
-_SPACE_BEFORE_CLOSE_RE = re.compile(r'\s+([."\')\]\}])')
-_SPACE_AFTER_OPEN_RE = re.compile(r'([(["\'])\s+')
+_SPACE_BEFORE_CLOSE_RE = re.compile(r'\s+([.)\]\}])')
+_SPACE_AFTER_OPEN_RE = re.compile(r'([(\[])\s+')
+# A straight quote may open or close, so a space is removed only where the quote's role is clear:
+# stripping both sides unconditionally glued 'Flesh: "Who His own self," writes' into 'Flesh:"Who...,"writes'.
+_SPACE_BEFORE_CLOSE_QUOTE_RE = re.compile(r'(?<=\S)\s+(["\'])(?=[.,;:!?)\]]|$)')
+_SPACE_AFTER_OPEN_QUOTE_RE = re.compile(r'(?:^|(?<=[(\[]))(["\'])\s+')
+_SPACED_DOUBLE_QUOTE_RE = re.compile(r'(?<=\S)\s+"\s+(?=\S)')
 _SPACED_CAPS_RE = re.compile(r'\b(?:[A-Z]\s){2,}[A-Z]\b')
-_SPACED_CAP_PAIR_RE = re.compile(r'\b([A-Z])\s(?=[A-Z]{2,}\b)')
+# A, I and O are words: joining them turned "O LORD" into "OLORD" and "I AM" into "IAM".
+_SPACED_CAP_PAIR_RE = re.compile(r'\b([B-HJ-NP-Z])\s(?=[A-Z]{2,}\b)')
 _CHAPTER_RE = re.compile(r'^\s*(?:chapter|chap\.?)\s*\d+\s*[:.\-–—]\s*', re.IGNORECASE)
 _ARABIC_NUM_RE = re.compile(r'^\s*\d+\s*[.)]')
 _ROMAN_NUM_RE = re.compile(r'^\s*[IVXLC]{2,}\s*[.)]', re.IGNORECASE)
@@ -60,6 +66,9 @@ def clean_text(s: str) -> str:
     s = _SPACE_BEFORE_PUNCT_RE.sub(r'\1', s)
     s = _SPACE_BEFORE_CLOSE_RE.sub(r'\1', s)
     s = _SPACE_AFTER_OPEN_RE.sub(r'\1', s)
+    s = _SPACE_BEFORE_CLOSE_QUOTE_RE.sub(r'\1', s)
+    s = _SPACE_AFTER_OPEN_QUOTE_RE.sub(r'\1', s)
+    s = _SPACED_DOUBLE_QUOTE_RE.sub(lambda m: ' "' if m.string.count('"', 0, m.start()) % 2 == 0 else '" ', s)
     s = normalize_spaced_caps(s)
     return s
 

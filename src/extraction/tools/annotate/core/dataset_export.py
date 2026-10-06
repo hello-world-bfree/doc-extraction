@@ -5,7 +5,7 @@ from typing import List, Dict, Optional
 import json
 from sklearn.model_selection import train_test_split
 
-from .session import EditedChunk
+from .session import EditedChunk, MergeChunk, SplitChunk
 
 
 def _get_chunk_field(chunk: Dict, field: str, default=None):
@@ -60,6 +60,127 @@ def _extract_doc_metadata(doc_metadata: Dict) -> Dict:
         'document_type': doc_metadata.get('document_type', ''),
         'subjects': doc_metadata.get('subject', []),
     }
+
+
+def expand_chunks_with_splits(
+    chunks: List[Dict],
+    split_chunks: Dict[str, List[SplitChunk]],
+    edited_chunks: Optional[Dict[str, List[EditedChunk]]] = None,
+    merged_chunks: Optional[Dict[str, List[MergeChunk]]] = None,
+) -> List[Dict]:
+    """Materialize chunks list with split children inlined.
+
+    For each root chunk:
+      - if it has a current split, emit one chunk per segment (recursively, in case
+        a child was itself split)
+      - else if it has a current edit, emit edited overlay
+      - else emit original
+
+    Children carry parent_chunk_id, split_reason, split_version, is_split=True.
+    Their stable_id is the split child id (so annotations lookup works).
+
+    Args:
+        chunks: Root chunks
+        split_chunks: Map of parent chunk_id -> list[SplitChunk]
+        edited_chunks: Optional map of parent chunk_id -> list[EditedChunk]
+
+    Returns:
+        Flat list of materialized chunks suitable for any export_* fn.
+    """
+    edited_chunks = edited_chunks or {}
+    merged_chunks = merged_chunks or {}
+
+    merge_first_at: Dict[str, MergeChunk] = {}
+    suppressed_members: set = set()
+    for merges in merged_chunks.values():
+        for m in merges:
+            if not m.is_current_version or not m.parent_chunk_ids:
+                continue
+            merge_first_at[m.parent_chunk_ids[0]] = m
+            for cid in m.parent_chunk_ids[1:]:
+                suppressed_members.add(cid)
+
+    def current_split(chunk_id: str) -> Optional[SplitChunk]:
+        for s in reversed(split_chunks.get(chunk_id, [])):
+            if s.is_current_version:
+                return s
+        return None
+
+    def current_edit(chunk_id: str) -> Optional[EditedChunk]:
+        for e in reversed(edited_chunks.get(chunk_id, [])):
+            if e.is_current_version:
+                return e
+        return None
+
+    def expand_one(base_chunk: Dict, chunk_id: str) -> List[Dict]:
+        split = current_split(chunk_id)
+        if split is not None:
+            out: List[Dict] = []
+            for seg_idx, child_id in enumerate(split.split_chunk_ids):
+                child = base_chunk.copy()
+                child['text'] = split.segments[seg_idx]
+                child['stable_id'] = child_id
+                child['chunk_id'] = child_id
+                child['parent_chunk_id'] = chunk_id
+                child['split_index'] = seg_idx
+                child['split_version'] = split.version
+                child['split_reason'] = split.split_reason
+                child['is_split'] = True
+                if 'metadata' in child and isinstance(child['metadata'], dict):
+                    meta = dict(child['metadata'])
+                    meta['word_count'] = len(split.segments[seg_idx].split())
+                    child['metadata'] = meta
+                child_split = current_split(child_id)
+                if child_split is not None:
+                    out.extend(expand_one(child, child_id))
+                else:
+                    out.append(child)
+            return out
+
+        edit = current_edit(chunk_id)
+        if edit is not None:
+            ed = base_chunk.copy()
+            ed['text'] = edit.edited_text
+            ed['edited_chunk_id'] = edit.edited_chunk_id
+            ed['is_edited'] = True
+            ed['edit_version'] = edit.version
+            ed['edit_reason'] = edit.edit_reason
+            if edit.edited_hierarchy:
+                ed['hierarchy'] = dict(edit.edited_hierarchy)
+                if isinstance(ed.get('metadata'), dict) and 'hierarchy' in ed['metadata']:
+                    meta = dict(ed['metadata'])
+                    meta['hierarchy'] = dict(edit.edited_hierarchy)
+                    ed['metadata'] = meta
+            return [ed]
+
+        return [base_chunk]
+
+    out: List[Dict] = []
+    for chunk in chunks:
+        cid = chunk.get('stable_id') or chunk.get('chunk_id')
+        if cid is None:
+            out.append(chunk)
+            continue
+        if cid in suppressed_members:
+            continue
+        merge = merge_first_at.get(cid)
+        if merge is not None:
+            merged = chunk.copy()
+            merged['text'] = merge.merged_text
+            merged['stable_id'] = merge.merged_chunk_id
+            merged['chunk_id'] = merge.merged_chunk_id
+            merged['parent_chunk_ids'] = list(merge.parent_chunk_ids)
+            merged['is_merged'] = True
+            merged['merge_version'] = merge.version
+            merged['merge_reason'] = merge.merge_reason
+            if isinstance(merged.get('metadata'), dict):
+                meta = dict(merged['metadata'])
+                meta['word_count'] = len(merge.merged_text.split())
+                merged['metadata'] = meta
+            out.append(merged)
+            continue
+        out.extend(expand_one(chunk, cid))
+    return out
 
 
 class DatasetExporter:
@@ -383,6 +504,11 @@ class DatasetExporter:
                     chunk_meta = _extract_chunk_metadata(chunk)
                     if is_edited:
                         chunk_meta['word_count'] = len(text.split())
+                        if current_edit.edited_hierarchy:
+                            chunk_meta['hierarchy'] = dict(current_edit.edited_hierarchy)
+                            chunk_meta['hierarchy_depth'] = len([
+                                v for v in current_edit.edited_hierarchy.values() if v
+                            ])
                     chunk_meta['source_file'] = _get_chunk_field(chunk, 'source_file', '')
                     record['metadata'] = chunk_meta
 

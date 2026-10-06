@@ -9,7 +9,7 @@ from rich.table import Table
 from pathlib import Path
 
 from ..core.session import AnnotationSession
-from ..core.dataset_export import DatasetExporter
+from ..core.dataset_export import DatasetExporter, expand_chunks_with_splits
 
 
 class StatisticsScreen(Screen):
@@ -138,7 +138,12 @@ class StatisticsScreen(Screen):
 
         try:
             count = DatasetExporter.export_jsonl(
-                self.session.chunks,
+                expand_chunks_with_splits(
+                    self.session.chunks,
+                    self.session.split_chunks,
+                    self.session.edited_chunks,
+                    self.session.merged_chunks,
+                ),
                 annotations,
                 output_path,
                 doc_metadata=self.session.doc_metadata,
@@ -165,7 +170,12 @@ class StatisticsScreen(Screen):
 
         try:
             train_count, test_count = DatasetExporter.export_train_test_split(
-                self.session.chunks,
+                expand_chunks_with_splits(
+                    self.session.chunks,
+                    self.session.split_chunks,
+                    self.session.edited_chunks,
+                    self.session.merged_chunks,
+                ),
                 annotations,
                 output_dir,
                 doc_metadata=self.session.doc_metadata,
@@ -194,7 +204,12 @@ class StatisticsScreen(Screen):
 
         try:
             counts = DatasetExporter.export_by_issues(
-                self.session.chunks,
+                expand_chunks_with_splits(
+                    self.session.chunks,
+                    self.session.split_chunks,
+                    self.session.edited_chunks,
+                    self.session.merged_chunks,
+                ),
                 annotations,
                 output_dir,
                 doc_metadata=self.session.doc_metadata,
@@ -224,7 +239,12 @@ class StatisticsScreen(Screen):
 
         try:
             counts = DatasetExporter.export_by_labels(
-                self.session.chunks,
+                expand_chunks_with_splits(
+                    self.session.chunks,
+                    self.session.split_chunks,
+                    self.session.edited_chunks,
+                    self.session.merged_chunks,
+                ),
                 annotations,
                 output_dir,
                 doc_metadata=self.session.doc_metadata,

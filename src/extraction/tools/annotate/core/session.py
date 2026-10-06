@@ -9,6 +9,57 @@ import hashlib
 
 
 @dataclass
+class SplitChunk:
+    """Split of a chunk into N segments with lineage tracking."""
+
+    split_chunk_ids: List[str]
+    parent_chunk_id: str
+    version: int
+    segments: List[str]
+    split_reason: str
+    original_text: str
+    inherited_metadata: Dict = field(default_factory=dict)
+    splitter_id: str = "default"
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
+    is_current_version: bool = True
+
+    def to_dict(self) -> Dict:
+        """Convert to dictionary."""
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict) -> "SplitChunk":
+        """Create from dictionary."""
+        return cls(**data)
+
+
+@dataclass
+class MergeChunk:
+    """Merge of N adjacent chunks into one with lineage tracking."""
+
+    merged_chunk_id: str
+    parent_chunk_ids: List[str]
+    version: int
+    merged_text: str
+    separator: str
+    merge_reason: str
+    original_texts: List[str]
+    inherited_metadata: Dict = field(default_factory=dict)
+    merger_id: str = "default"
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
+    is_current_version: bool = True
+
+    def to_dict(self) -> Dict:
+        """Convert to dictionary."""
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict) -> "MergeChunk":
+        """Create from dictionary."""
+        return cls(**data)
+
+
+@dataclass
 class EditedChunk:
     """Edited version of a chunk with lineage tracking."""
 
@@ -22,6 +73,8 @@ class EditedChunk:
     editor_id: str = "default"
     timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     is_current_version: bool = True
+    edited_hierarchy: Optional[Dict[str, str]] = None
+    original_hierarchy: Optional[Dict[str, str]] = None
 
     def to_dict(self) -> Dict:
         """Convert to dictionary."""
@@ -30,7 +83,8 @@ class EditedChunk:
     @classmethod
     def from_dict(cls, data: Dict) -> "EditedChunk":
         """Create from dictionary."""
-        return cls(**data)
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in data.items() if k in known})
 
 
 @dataclass
@@ -123,6 +177,9 @@ class AnnotationSession:
 
         self.annotations: Dict[str, ChunkAnnotation] = {}
         self.edited_chunks: Dict[str, List[EditedChunk]] = {}
+        self.split_chunks: Dict[str, List[SplitChunk]] = {}
+        self.merged_chunks: Dict[str, List[MergeChunk]] = {}
+        self.view_order: List[tuple[str, Optional[int]]] = []
         self.current_index = 0
         self.stats = SessionStats(total_chunks=len(chunks))
 
@@ -133,6 +190,8 @@ class AnnotationSession:
             self.load()
         else:
             self._initialize_default_annotations()
+
+        self._rebuild_view_order()
 
     def _initialize_default_annotations(self) -> None:
         """Initialize all chunks with default 'good' annotation."""
@@ -146,28 +205,86 @@ class AnnotationSession:
                 )
         self.stats.update(list(self.annotations.values()))
 
-    def get_chunk(self, index: Optional[int] = None) -> Optional[Dict]:
-        """Get chunk at index (or current index).
+    def _resolve_parent_chunk(self, chunk_id: str) -> Optional[Dict]:
+        """Resolve original chunk dict (in self.chunks) by id. None if not a root."""
+        for c in self.chunks:
+            cid = c.get('stable_id') or c.get('chunk_id')
+            if cid == chunk_id:
+                return c
+        return None
 
-        Returns edited version if exists, otherwise original.
-        """
-        idx = index if index is not None else self.current_index
-        if not (0 <= idx < len(self.chunks)):
+    def _resolve_merge_by_id(self, merged_id: str) -> Optional["MergeChunk"]:
+        """Find current MergeChunk whose merged_chunk_id matches."""
+        for merges in self.merged_chunks.values():
+            for m in merges:
+                if m.is_current_version and m.merged_chunk_id == merged_id:
+                    return m
+        return None
+
+    def _materialize_chunk(self, chunk_id: str, segment_idx: Optional[int]) -> Optional[Dict]:
+        """Build chunk dict for a view_order entry, applying current split/edit/merge overlay."""
+        merge = self._resolve_merge_by_id(chunk_id)
+        if merge is not None:
+            first_parent = self._resolve_parent_chunk(merge.parent_chunk_ids[0])
+            base = first_parent.copy() if first_parent else {}
+            base['text'] = merge.merged_text
+            base['stable_id'] = merge.merged_chunk_id
+            base['chunk_id'] = merge.merged_chunk_id
+            base['parent_chunk_ids'] = list(merge.parent_chunk_ids)
+            base['is_merged'] = True
+            base['merge_version'] = merge.version
+            base['merge_reason'] = merge.merge_reason
+            if isinstance(base.get('metadata'), dict):
+                meta = dict(base['metadata'])
+                meta['word_count'] = len(merge.merged_text.split())
+                base['metadata'] = meta
+            return base
+
+        current_split = self.get_current_split(chunk_id)
+        if current_split and segment_idx is not None:
+            base = self._materialize_chunk(chunk_id, None) or {}
+            child = base.copy() if base else {}
+            child['text'] = current_split.segments[segment_idx]
+            child['stable_id'] = current_split.split_chunk_ids[segment_idx]
+            child['chunk_id'] = current_split.split_chunk_ids[segment_idx]
+            child['parent_chunk_id'] = chunk_id
+            child['is_split'] = True
+            child['split_index'] = segment_idx
+            child['split_version'] = current_split.version
+            return child
+
+        parent = self._resolve_parent_chunk(chunk_id)
+        if parent is None:
             return None
-
-        original_chunk = self.chunks[idx]
-        chunk_id = original_chunk.get('stable_id') or original_chunk.get('chunk_id')
 
         current_edit = self.get_current_edit(chunk_id)
         if current_edit:
-            edited_chunk = original_chunk.copy()
+            edited_chunk = parent.copy()
             edited_chunk['text'] = current_edit.edited_text
             edited_chunk['edited_chunk_id'] = current_edit.edited_chunk_id
             edited_chunk['is_edited'] = True
             edited_chunk['edit_version'] = current_edit.version
+            if current_edit.edited_hierarchy:
+                edited_chunk['hierarchy'] = dict(current_edit.edited_hierarchy)
+                if isinstance(edited_chunk.get('metadata'), dict) and 'hierarchy' in edited_chunk['metadata']:
+                    meta = dict(edited_chunk['metadata'])
+                    meta['hierarchy'] = dict(current_edit.edited_hierarchy)
+                    edited_chunk['metadata'] = meta
             return edited_chunk
 
-        return original_chunk
+        return parent
+
+    def get_chunk(self, index: Optional[int] = None) -> Optional[Dict]:
+        """Get chunk at view index (or current index).
+
+        Returns split child if applicable, else edited version, else original.
+        """
+        idx = index if index is not None else self.current_index
+        if not (0 <= idx < len(self.view_order)):
+            return None
+
+        chunk_id, segment_idx = self.view_order[idx]
+        return self._materialize_chunk(chunk_id, segment_idx)
 
     def get_annotation(self, index: Optional[int] = None) -> Optional[ChunkAnnotation]:
         """Get annotation for chunk at index."""
@@ -250,53 +367,57 @@ class AnnotationSession:
         return True
 
     def next_chunk(self) -> bool:
-        """Move to next chunk.
-
-        Returns:
-            True if moved successfully
-        """
-        if self.current_index < len(self.chunks) - 1:
+        """Move to next chunk."""
+        if self.current_index < len(self.view_order) - 1:
             self.current_index += 1
             return True
         return False
 
     def prev_chunk(self) -> bool:
-        """Move to previous chunk.
-
-        Returns:
-            True if moved successfully
-        """
+        """Move to previous chunk."""
         if self.current_index > 0:
             self.current_index -= 1
             return True
         return False
 
     def jump_to(self, index: int) -> bool:
-        """Jump to specific chunk index.
-
-        Returns:
-            True if jump was successful
-        """
-        if 0 <= index < len(self.chunks):
+        """Jump to specific view index."""
+        if 0 <= index < len(self.view_order):
             self.current_index = index
             return True
         return False
 
+    def _view_chunk_id(self, view_idx: int) -> Optional[str]:
+        """Get effective chunk_id at a view position (child id if split)."""
+        if not (0 <= view_idx < len(self.view_order)):
+            return None
+        parent_id, segment_idx = self.view_order[view_idx]
+        if segment_idx is None:
+            return parent_id
+        current_split = self.get_current_split(parent_id)
+        if current_split is None:
+            return parent_id
+        return current_split.split_chunk_ids[segment_idx]
+
     def get_unannotated_indices(self) -> List[int]:
-        """Get indices of chunks without annotations."""
+        """Get view indices of chunks without annotations."""
         unannotated = []
-        for i, chunk in enumerate(self.chunks):
-            chunk_id = chunk.get('stable_id') or chunk.get('chunk_id')
-            if chunk_id not in self.annotations or not self.annotations[chunk_id].is_annotated():
+        for i in range(len(self.view_order)):
+            cid = self._view_chunk_id(i)
+            if cid is None:
+                continue
+            if cid not in self.annotations or not self.annotations[cid].is_annotated():
                 unannotated.append(i)
         return unannotated
 
     def get_annotated_indices(self) -> Set[int]:
-        """Get set of annotated chunk indices."""
+        """Get set of annotated view indices."""
         annotated = set()
-        for i, chunk in enumerate(self.chunks):
-            chunk_id = chunk.get('stable_id') or chunk.get('chunk_id')
-            if chunk_id in self.annotations and self.annotations[chunk_id].is_annotated():
+        for i in range(len(self.view_order)):
+            cid = self._view_chunk_id(i)
+            if cid is None:
+                continue
+            if cid in self.annotations and self.annotations[cid].is_annotated():
                 annotated.add(i)
         return annotated
 
@@ -306,11 +427,336 @@ class AnnotationSession:
         hash_obj = hashlib.sha256(text.encode('utf-8'))
         return f"ed_{hash_obj.hexdigest()[:16]}"
 
+    @staticmethod
+    def _generate_split_chunk_id(text: str, idx: int) -> str:
+        """Generate deterministic ID for a split segment."""
+        hash_obj = hashlib.sha256(text.encode('utf-8'))
+        return f"split_{hash_obj.hexdigest()[:16]}_{idx}"
+
+    @staticmethod
+    def _generate_merge_chunk_id(parent_ids: List[str]) -> str:
+        """Generate deterministic ID for a merged chunk."""
+        key = "|".join(parent_ids)
+        hash_obj = hashlib.sha256(key.encode('utf-8'))
+        return f"mg_{hash_obj.hexdigest()[:16]}"
+
+    def _current_merge_for_parent(self, chunk_id: str) -> Optional["MergeChunk"]:
+        """Get the current merge keyed at this parent id, if any."""
+        merges = self.merged_chunks.get(chunk_id, [])
+        for m in reversed(merges):
+            if m.is_current_version:
+                return m
+        return None
+
+    def _merge_member_set(self) -> Set[str]:
+        """All chunk ids that are non-first members of an active merge (suppressed)."""
+        members: Set[str] = set()
+        for merges in self.merged_chunks.values():
+            for m in merges:
+                if m.is_current_version:
+                    members.update(m.parent_chunk_ids[1:])
+        return members
+
+    def _merge_first_member_index(self, parent_id: str) -> Optional["MergeChunk"]:
+        """If parent_id is the *first* member of an active merge, return that merge."""
+        for merges in self.merged_chunks.values():
+            for m in merges:
+                if m.is_current_version and m.parent_chunk_ids and m.parent_chunk_ids[0] == parent_id:
+                    return m
+        return None
+
+    def _rebuild_view_order(self) -> None:
+        """Rebuild view_order from chunks + current splits.
+
+        Each parent chunk expands to its current split's segments (recursively),
+        else appears once. Preserves position of self.current_index by chunk identity
+        when possible.
+        """
+        prior_id: Optional[str] = None
+        if self.view_order and 0 <= self.current_index < len(self.view_order):
+            prior_id = self._view_chunk_id(self.current_index)
+
+        def expand(chunk_id: str) -> List[tuple[str, Optional[int]]]:
+            current_split = self.get_current_split(chunk_id)
+            if current_split is None:
+                return [(chunk_id, None)]
+            out: List[tuple[str, Optional[int]]] = []
+            for seg_idx, child_id in enumerate(current_split.split_chunk_ids):
+                child_split = self.get_current_split(child_id)
+                if child_split is None:
+                    out.append((chunk_id, seg_idx))
+                else:
+                    out.extend(expand(child_id))
+            return out
+
+        suppressed = self._merge_member_set()
+        new_order: List[tuple[str, Optional[int]]] = []
+        for chunk in self.chunks:
+            cid = chunk.get('stable_id') or chunk.get('chunk_id')
+            if not cid:
+                continue
+            if cid in suppressed:
+                continue
+            merge = self._merge_first_member_index(cid)
+            if merge is not None:
+                new_order.append((merge.merged_chunk_id, None))
+                continue
+            new_order.extend(expand(cid))
+
+        self.view_order = new_order
+
+        if prior_id is not None:
+            for i in range(len(self.view_order)):
+                if self._view_chunk_id(i) == prior_id:
+                    self.current_index = i
+                    return
+        if self.current_index >= len(self.view_order):
+            self.current_index = max(0, len(self.view_order) - 1)
+
+    def create_split(
+        self,
+        chunk_id: str,
+        segments: List[str],
+        split_reason: str,
+    ) -> Optional[SplitChunk]:
+        """Split a chunk into N segments with lineage tracking.
+
+        Children inherit parent's current annotation (label/confidence/issues/rationale).
+        Splitting an edited chunk uses the current view text as `original_text`.
+        Supports splitting a previously-split child (chunk_id can be a split child id).
+
+        Args:
+            chunk_id: Parent chunk id (root or split child)
+            segments: List of non-empty segment texts (>=2)
+            split_reason: Reason for split (required)
+
+        Returns:
+            SplitChunk if created, None on validation failure
+        """
+        if not split_reason.strip():
+            return None
+        segments = [s for s in (seg.strip() for seg in segments) if s]
+        if len(segments) < 2:
+            return None
+
+        view_idx = self._find_view_index_for(chunk_id)
+        source_chunk = self.get_chunk(view_idx) if view_idx is not None else None
+        if source_chunk is None:
+            return None
+
+        original_text = source_chunk.get('text', '')
+        inherited_metadata = {
+            k: v for k, v in source_chunk.items()
+            if k not in ('text', 'stable_id', 'chunk_id')
+        }
+
+        existing = self.split_chunks.get(chunk_id, [])
+        for s in existing:
+            s.is_current_version = False
+        version = len(existing) + 1
+
+        split_chunk_ids = [
+            self._generate_split_chunk_id(seg, i) for i, seg in enumerate(segments)
+        ]
+
+        new_split = SplitChunk(
+            split_chunk_ids=split_chunk_ids,
+            parent_chunk_id=chunk_id,
+            version=version,
+            segments=segments,
+            split_reason=split_reason,
+            original_text=original_text,
+            inherited_metadata=inherited_metadata,
+            splitter_id=self.annotator_id,
+            is_current_version=True,
+        )
+        self.split_chunks.setdefault(chunk_id, []).append(new_split)
+
+        parent_annotation = self.annotations.get(chunk_id)
+        for child_id in split_chunk_ids:
+            if parent_annotation is not None:
+                self.annotations[child_id] = ChunkAnnotation(
+                    chunk_id=child_id,
+                    label=parent_annotation.label,
+                    confidence=parent_annotation.confidence,
+                    rationale=parent_annotation.rationale,
+                    issues=list(parent_annotation.issues),
+                    annotator_id=self.annotator_id,
+                )
+            else:
+                self.annotations[child_id] = ChunkAnnotation(
+                    chunk_id=child_id,
+                    label=0,
+                    annotator_id=self.annotator_id,
+                )
+
+        self._rebuild_view_order()
+        self.stats.update(list(self.annotations.values()))
+        return new_split
+
+    def _find_view_index_for(self, chunk_id: str) -> Optional[int]:
+        """Locate view index of a chunk by its effective id (root or split child)."""
+        for i in range(len(self.view_order)):
+            if self._view_chunk_id(i) == chunk_id:
+                return i
+        return None
+
+    def create_merge(
+        self,
+        chunk_ids: List[str],
+        merge_reason: str,
+        separator: str = "\n\n",
+    ) -> Optional[MergeChunk]:
+        """Merge N adjacent root chunks into one merged chunk.
+
+        MVP constraints:
+          - chunk_ids must all be root chunks (no split children, no merged ids)
+          - must appear contiguously in self.view_order at segment_idx=None
+          - >=2 ids, reason required
+
+        Children inherit worst-of annotations: BAD > GOOD > skip,
+        min confidence, union of issues. Rationale is concatenated.
+
+        Returns:
+            MergeChunk on success, None on validation failure.
+        """
+        if not merge_reason.strip():
+            return None
+        if not chunk_ids or len(chunk_ids) < 2:
+            return None
+        if len(set(chunk_ids)) != len(chunk_ids):
+            return None
+
+        root_ids = {
+            (c.get('stable_id') or c.get('chunk_id'))
+            for c in self.chunks
+        }
+        for cid in chunk_ids:
+            if cid not in root_ids:
+                return None
+
+        suppressed = self._merge_member_set()
+        for cid in chunk_ids:
+            if cid in suppressed:
+                return None
+            if self._merge_first_member_index(cid) is not None:
+                return None
+            if self.get_current_split(cid) is not None:
+                return None
+
+        view_indices: List[int] = []
+        for cid in chunk_ids:
+            idx = None
+            for i, (vid, seg) in enumerate(self.view_order):
+                if seg is None and vid == cid:
+                    idx = i
+                    break
+            if idx is None:
+                return None
+            view_indices.append(idx)
+        if view_indices != list(range(view_indices[0], view_indices[0] + len(view_indices))):
+            return None
+
+        parent_chunks = [self._resolve_parent_chunk(cid) for cid in chunk_ids]
+        if any(p is None for p in parent_chunks):
+            return None
+
+        original_texts: List[str] = []
+        for cid, parent in zip(chunk_ids, parent_chunks):
+            edit = self.get_current_edit(cid)
+            text = edit.edited_text if edit is not None else parent.get('text', '')
+            original_texts.append(text)
+
+        merged_text = separator.join(original_texts)
+        merged_chunk_id = self._generate_merge_chunk_id(chunk_ids)
+
+        first_parent = parent_chunks[0]
+        inherited_metadata = {
+            k: v for k, v in first_parent.items()
+            if k not in ('text', 'stable_id', 'chunk_id')
+        }
+
+        existing = self.merged_chunks.get(chunk_ids[0], [])
+        for m in existing:
+            m.is_current_version = False
+        version = len(existing) + 1
+
+        new_merge = MergeChunk(
+            merged_chunk_id=merged_chunk_id,
+            parent_chunk_ids=list(chunk_ids),
+            version=version,
+            merged_text=merged_text,
+            separator=separator,
+            merge_reason=merge_reason,
+            original_texts=original_texts,
+            inherited_metadata=inherited_metadata,
+            merger_id=self.annotator_id,
+            is_current_version=True,
+        )
+        self.merged_chunks.setdefault(chunk_ids[0], []).append(new_merge)
+
+        parent_anns = [self.annotations.get(cid) for cid in chunk_ids]
+        present = [a for a in parent_anns if a is not None]
+        if present:
+            if any(a.label == 1 for a in present):
+                inherited_label = 1
+            elif any(a.label == 0 for a in present):
+                inherited_label = 0
+            else:
+                inherited_label = None
+            confidences = [a.confidence for a in present if a.confidence is not None]
+            inherited_conf = min(confidences) if confidences else None
+            inherited_issues = sorted({iss for a in present for iss in a.issues})
+            rationale_parts = [a.rationale.strip() for a in present if a.rationale.strip()]
+            inherited_rationale = " | ".join(rationale_parts)
+        else:
+            inherited_label = 0
+            inherited_conf = None
+            inherited_issues = []
+            inherited_rationale = ""
+
+        self.annotations[merged_chunk_id] = ChunkAnnotation(
+            chunk_id=merged_chunk_id,
+            label=inherited_label,
+            confidence=inherited_conf,
+            rationale=inherited_rationale,
+            issues=inherited_issues,
+            annotator_id=self.annotator_id,
+        )
+
+        self._rebuild_view_order()
+        self.stats.update(list(self.annotations.values()))
+        return new_merge
+
+    def get_merge_history(self, parent_id: str) -> List[MergeChunk]:
+        """Get all merge versions keyed at parent_id (first member)."""
+        return self.merged_chunks.get(parent_id, [])
+
+    def get_current_merge(self, parent_id: str) -> Optional[MergeChunk]:
+        """Get current merge keyed at parent_id."""
+        for m in reversed(self.merged_chunks.get(parent_id, [])):
+            if m.is_current_version:
+                return m
+        return None
+
+    def get_split_history(self, chunk_id: str) -> List[SplitChunk]:
+        """Get all split versions for chunk."""
+        return self.split_chunks.get(chunk_id, [])
+
+    def get_current_split(self, chunk_id: str) -> Optional[SplitChunk]:
+        """Get current (latest) split for chunk."""
+        splits = self.split_chunks.get(chunk_id, [])
+        for s in reversed(splits):
+            if s.is_current_version:
+                return s
+        return None
+
     def create_edit(
         self,
         chunk_id: str,
         edited_text: str,
         edit_reason: str,
+        edited_hierarchy: Optional[Dict[str, str]] = None,
     ) -> Optional[EditedChunk]:
         """Create new edit for chunk.
 
@@ -318,6 +764,7 @@ class AnnotationSession:
             chunk_id: Original chunk stable_id
             edited_text: Modified text
             edit_reason: Reason for edit (required)
+            edited_hierarchy: Optional new hierarchy dict (level_1..level_6)
 
         Returns:
             EditedChunk if created, None if chunk not found
@@ -325,14 +772,9 @@ class AnnotationSession:
         if not edit_reason.strip():
             return None
 
-        original_chunk = None
-        for chunk in self.chunks:
-            cid = chunk.get('stable_id') or chunk.get('chunk_id')
-            if cid == chunk_id:
-                original_chunk = chunk
-                break
-
-        if original_chunk is None:
+        view_idx = self._find_view_index_for(chunk_id)
+        source_chunk = self.get_chunk(view_idx) if view_idx is not None else None
+        if source_chunk is None:
             return None
 
         existing_edits = self.edited_chunks.get(chunk_id, [])
@@ -341,15 +783,20 @@ class AnnotationSession:
             edit.is_current_version = False
 
         version = len(existing_edits) + 1
-        edited_chunk_id = self._generate_edited_chunk_id(edited_text)
+        edited_chunk_id = self._generate_edited_chunk_id(edited_text + json.dumps(edited_hierarchy or {}, sort_keys=True))
 
         inherited_metadata = {
-            k: v for k, v in original_chunk.items()
+            k: v for k, v in source_chunk.items()
             if k not in ['text', 'stable_id', 'chunk_id']
         }
 
         if 'metadata' in inherited_metadata and 'word_count' in inherited_metadata['metadata']:
             inherited_metadata['metadata']['word_count'] = len(edited_text.split())
+
+        original_hierarchy = (
+            source_chunk.get('hierarchy')
+            or source_chunk.get('metadata', {}).get('hierarchy')
+        )
 
         new_edit = EditedChunk(
             edited_chunk_id=edited_chunk_id,
@@ -357,10 +804,12 @@ class AnnotationSession:
             version=version,
             edited_text=edited_text,
             edit_reason=edit_reason,
-            original_text=original_chunk.get('text', ''),
+            original_text=source_chunk.get('text', ''),
             inherited_metadata=inherited_metadata,
             editor_id=self.annotator_id,
             is_current_version=True,
+            edited_hierarchy=edited_hierarchy,
+            original_hierarchy=dict(original_hierarchy) if original_hierarchy else None,
         )
 
         if chunk_id not in self.edited_chunks:
@@ -425,6 +874,7 @@ class AnnotationSession:
             chunk_id=chunk_id,
             edited_text=target_edit.edited_text,
             edit_reason=edit_reason,
+            edited_hierarchy=target_edit.edited_hierarchy,
         )
 
     def save(self) -> None:
@@ -441,6 +891,14 @@ class AnnotationSession:
             'edited_chunks': {
                 k: [edit.to_dict() for edit in edits]
                 for k, edits in self.edited_chunks.items()
+            },
+            'split_chunks': {
+                k: [s.to_dict() for s in splits]
+                for k, splits in self.split_chunks.items()
+            },
+            'merged_chunks': {
+                k: [m.to_dict() for m in merges]
+                for k, merges in self.merged_chunks.items()
             },
             'stats': self.stats.to_dict(),
             'doc_metadata': self.doc_metadata,
@@ -472,6 +930,18 @@ class AnnotationSession:
         self.edited_chunks = {
             k: [EditedChunk.from_dict(edit) for edit in edits]
             for k, edits in edited_chunks_data.items()
+        }
+
+        split_chunks_data = session_data.get('split_chunks', {})
+        self.split_chunks = {
+            k: [SplitChunk.from_dict(s) for s in splits]
+            for k, splits in split_chunks_data.items()
+        }
+
+        merged_chunks_data = session_data.get('merged_chunks', {})
+        self.merged_chunks = {
+            k: [MergeChunk.from_dict(m) for m in merges]
+            for k, merges in merged_chunks_data.items()
         }
 
         self.stats = SessionStats(**session_data.get('stats', {}))

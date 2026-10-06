@@ -100,7 +100,7 @@ Configuration for EPUB extraction.
 | `min_block_words` | `int` | `30` | Minimum words to chunk generic block tags (div, section, etc.). |
 | `preserve_hierarchy_across_docs` | `bool` | `False` | Whether to preserve heading hierarchy across EPUB spine documents. `False` = reset at doc boundaries. |
 | `reset_depth` | `int` | `2` | When not preserving hierarchy, clear levels ≥ this depth (1-6) at document boundaries. |
-| `class_denylist` | `str` | `r"^(?:calibre\d+\|note\|footnote)$"` | Regex pattern for CSS classes to exclude (footnotes, calibre artifacts). |
+| `class_denylist` | `str` | `r"^(?:note\|footnote)$"` | Regex pattern for CSS classes to exclude (footnotes). |
 | `filter_tiny_chunks` | `Literal["off", "conservative", "standard", "aggressive"]` | `"conservative"` | Tiny chunk filtering level. `conservative` = index/TOC/punctuation (-47.6%), `standard` = +bullets/refs (-48.8%), `aggressive` = +appendixes (-60%), `off` = disabled. |
 | `detect_visual_headings` | `bool` | `True` | Enable visual heading detection from inline font-size styles. Note: CLI default is `False`; must opt-in with `--detect-visual-headings`. |
 | `visual_heading_font_threshold` | `float` | `1.3` | Font-size multiplier threshold for visual heading detection (1.0-3.0). |
@@ -138,7 +138,7 @@ config = EpubExtractorConfig(
     min_block_words=30,
     preserve_hierarchy_across_docs=False,
     reset_depth=2,
-    class_denylist=r"^(?:calibre\d+|note|footnote)$",
+    class_denylist=r"^(?:note|footnote)$",
     filter_tiny_chunks="conservative",
     detect_visual_headings=True,
     visual_heading_font_threshold=1.3,

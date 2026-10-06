@@ -104,6 +104,7 @@ def _base_config_kwargs(config_dict: dict) -> dict:
         "overlap_percent": config_dict.get("overlap_percent", 0.10),
         "code_max_tokens": config_dict.get("code_max_tokens", 256),
         "tokenizer_name": config_dict.get("tokenizer_name", "google/embeddinggemma-300m"),
+        "allow_word_estimate": config_dict.get("allow_word_estimate", False),
     }
 
 
@@ -116,7 +117,7 @@ def build_config_for_format(fmt: str, config_dict: dict):
             min_block_words=config_dict.get('min_block_words', 2),
             preserve_hierarchy_across_docs=config_dict.get('preserve_hierarchy_across_docs', False),
             reset_depth=config_dict.get('reset_depth', 2),
-            class_denylist=config_dict.get('class_denylist', r"^(?:calibre\d+|note|footnote)$"),
+            class_denylist=config_dict.get('class_denylist', r"^(?:note|footnote)$"),
             filter_tiny_chunks=config_dict.get('filter_tiny_chunks', 'conservative'),
             detect_visual_headings=config_dict.get('detect_visual_headings', False),
             visual_heading_font_threshold=config_dict.get('visual_heading_font_threshold', 1.3),
@@ -461,7 +462,7 @@ def main():
     )
     ap.add_argument(
         "--deny-class",
-        default=r"^(?:calibre\d+|note|footnote)$",
+        default=r"^(?:note|footnote)$",
         help="Regex for class denylist [EPUB]",
     )
     ap.add_argument(
@@ -651,6 +652,7 @@ def main():
         "overlap_percent": args.overlap_percent,
         "code_max_tokens": args.code_max_tokens,
         "tokenizer_name": args.tokenizer_name,
+        "allow_word_estimate": True,
     }
 
     # Single-file mode

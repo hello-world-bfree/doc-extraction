@@ -10,7 +10,7 @@ heading hierarchy from h1-h6 tags.
 
 import logging
 import os
-from typing import Optional
+from typing import Callable, Optional
 
 from bs4 import BeautifulSoup
 
@@ -39,6 +39,9 @@ MD_SCHEMA_VERSION = "2026-03-21"
 
 LOGGER = logging.getLogger("html_parser")
 
+_TEXT_BLOCK_TAGS = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'li', 'blockquote', 'pre', 'code']
+_CONTAINER_TAGS = {'div', 'li', 'blockquote'}
+
 
 class HtmlExtractor(BaseExtractor):
     """
@@ -52,7 +55,8 @@ class HtmlExtractor(BaseExtractor):
         self,
         source_path: str,
         config: Optional[HtmlExtractorConfig] = None,
-        analyzer: Optional[BaseAnalyzer] = None
+        analyzer: Optional[BaseAnalyzer] = None,
+        soup_cleaner: Optional[Callable[[BeautifulSoup], None]] = None,
     ):
         """
         Initialize HTML extractor.
@@ -61,9 +65,12 @@ class HtmlExtractor(BaseExtractor):
             source_path: Path to HTML file
             config: Configuration dataclass (defaults to HtmlExtractorConfig())
             analyzer: Domain analyzer (defaults to GenericAnalyzer())
+            soup_cleaner: Optional callable that removes source-specific
+                elements (site chrome, notes) from the parsed tree in place
         """
         super().__init__(source_path, config or HtmlExtractorConfig(), analyzer)
 
+        self.__soup_cleaner = soup_cleaner
         self.__soup = None
         self.__html_title = ""
 
@@ -92,6 +99,9 @@ class HtmlExtractor(BaseExtractor):
 
             title_tag = self.__soup.find('title')
             self.__html_title = title_tag.get_text(strip=True) if title_tag else ""
+
+            if self.__soup_cleaner:
+                self.__soup_cleaner(self.__soup)
 
             LOGGER.info("Loaded HTML: %s", self.__html_title or "Untitled")
         except Exception as e:
@@ -122,10 +132,15 @@ class HtmlExtractor(BaseExtractor):
             self.__soup
         )
 
-        for elem in main_content.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'li', 'blockquote', 'pre', 'code']):
+        for elem in main_content.find_all(_TEXT_BLOCK_TAGS):
             tag_name = elem.name
 
             if tag_name == 'code' and elem.find_parent('pre'):
+                continue
+
+            # A wrapper's get_text() repeats every descendant block; on vatican.va four nested
+            # wrapper divs each re-emitted the whole document.
+            if tag_name in _CONTAINER_TAGS and elem.find(_TEXT_BLOCK_TAGS):
                 continue
 
             if is_heading_tag(tag_name):

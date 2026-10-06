@@ -32,6 +32,15 @@ Controls are hidden by default. Press `i` to show the Issues and Quality panels.
 - `b` - Mark chunk as BAD for RAG
 - `s` - Skip chunk (no label)
 
+### Editing & Splitting
+- `e` - Edit chunk text (versioned)
+- `S` - Split chunk into N children (insert `---SPLIT---` line between segments).
+       Children inherit parent's label/issues. v1 has no split-undo;
+       delete session file to discard splits.
+- `M` - Merge current chunk with the next one (MVP: roots only, 2 adjacent).
+       Merged chunk inherits worst-of label (BAD>GOOD), min confidence,
+       union of issues. No merge-undo in v1; delete session file to discard.
+
 ### View Management
 - `i` - Toggle controls (hide/show Issues and Quality panels for fullscreen view)
 

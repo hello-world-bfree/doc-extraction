@@ -17,6 +17,7 @@ from ..core.models import Chunk, Document, Metadata, Provenance, Quality
 from ..core.identifiers import sha1, stable_id
 from ..core.quality import quality_signals_from_text, score_quality, route_doc
 from ..core.strategies import get_strategy, ChunkConfig, TokenChunkConfig
+from ..core.unit_stage import run_unit_stage
 from ..state import ExtractorState
 from ..exceptions import MethodOrderError, ConfigError
 from ..analyzers.base import BaseAnalyzer
@@ -85,12 +86,19 @@ class BaseExtractor(ABC):
 
         self.__raw_chunks: List[Dict[str, Any]] = []
         self.__full_text: Optional[str] = None
+        self.__excluded_units: List[Dict[str, Any]] = []
+        self.__unit_report: Optional[Dict[str, Any]] = None
 
     @property
     def chunks(self) -> List[Chunk]:
         """Get extracted chunks (available after parse())."""
         self._require_state("chunks", [ExtractorState.PARSED, ExtractorState.METADATA_READY, ExtractorState.OUTPUT_READY])
         return self.__chunks
+
+    @property
+    def unit_report(self) -> Optional[Dict[str, Any]]:
+        """Units dropped or flagged before packing (available after parse())."""
+        return self.__unit_report
 
     @property
     def metadata(self) -> Optional[Metadata]:
@@ -297,6 +305,7 @@ class BaseExtractor(ABC):
                 overlap_percent=self.config.overlap_percent,
                 code_max_tokens=self.config.code_max_tokens,
                 tokenizer_name=self.config.tokenizer_name,
+                allow_word_estimate=self.config.allow_word_estimate,
             )
         else:
             chunk_config = ChunkConfig(
@@ -306,13 +315,20 @@ class BaseExtractor(ABC):
                 preserve_small_chunks=self.config.preserve_small_chunks,
             )
 
-        processed_chunks = strategy.apply(raw_chunks_dicts, chunk_config)
+        units, report = run_unit_stage(
+            raw_chunks_dicts,
+            filter_noise=self.config.filter_noise,
+            structural_rules=self.config.structural_rules,
+            judge=self.config.unit_judge,
+            drop_threshold=self.config.judge_drop_threshold,
+            keep_threshold=self.config.judge_keep_threshold,
+        )
+        report["dropped"] = self.__excluded_units + report["dropped"]
+        self.__unit_report = report
+        for unit in units:
+            unit.pop("source_classes", None)
 
-        if self.config.filter_noise:
-            from ..core.noise_filter import NoiseFilter
-            processed_chunks, filtered_count = NoiseFilter.filter_chunks(processed_chunks)
-            if filtered_count > 0:
-                LOGGER.debug("Filtered %d noise chunks", filtered_count)
+        processed_chunks = strategy.apply(units, chunk_config)
 
         self.__chunks = [
             Chunk(**chunk_dict) if isinstance(chunk_dict, dict) else chunk_dict
@@ -401,6 +417,10 @@ class BaseExtractor(ABC):
             content_hash=content_hash,
         )
 
+    def _record_excluded(self, text: str, stage: str) -> None:
+        """Record text the extractor excluded before units exist (e.g. by class denylist)."""
+        self.__excluded_units.append({"paragraph_id": None, "stage": stage, "text": text})
+
     def _add_raw_chunk(self, chunk: Dict[str, Any]) -> None:
         """
         Add a raw paragraph chunk for strategy processing.
@@ -449,6 +469,7 @@ class BaseExtractor(ABC):
 
         result = doc.to_dict()
         result["metadata"] = metadata_dict
+        result["unit_report"] = self.__unit_report
 
         self.__state = ExtractorState.OUTPUT_READY
         return result

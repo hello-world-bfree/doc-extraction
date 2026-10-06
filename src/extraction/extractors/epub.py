@@ -11,13 +11,14 @@ Maintains exact backward compatibility with original parser behavior.
 import hashlib
 import logging
 import os
+import posixpath
 import re
 from collections import Counter, OrderedDict
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 import ebooklib
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 from ebooklib import epub
 
 from .base import BaseExtractor
@@ -56,7 +57,42 @@ FOOTNOTE_MAX = 999  # cap to reduce false positives
 LOGGER = logging.getLogger("epub_parser")
 
 
+class _MissingFileTolerantReader(epub.EpubReader):
+    """Loads a manifest item whose file is absent from the archive as empty, and lists it.
+
+    Kobo injects `js/kobo.js` into some manifests at a path where the file is not stored;
+    ebooklib's reader refuses the whole book for it.
+    """
+
+    def __init__(self, epub_file_name, options=None):
+        super().__init__(epub_file_name, options)
+        self.missing: List[str] = []
+
+    def read_file(self, name):
+        try:
+            return super().read_file(name)
+        except KeyError:
+            if not self.opf_file or posixpath.normpath(name) == posixpath.normpath(self.opf_file):
+                raise
+            self.missing.append(posixpath.normpath(name))
+            return b""
+
+
 # ====================== Footnote Detection ======================
+
+# Text of a superscript that marks a note: "298", "b", "*", "iv". Ordinals ("st", "th") are not markers.
+_NOTE_MARKER_RE = re.compile(r'^(?:\d{1,4}|[a-z]|[*†‡§]{1,3}|[ivx]{2,5})$')
+
+def remove_note_markers(soup) -> None:
+    """Delete note reference markers in place. Coverage measurement calls this too, so it sees the same text."""
+    for t in soup.select(
+        'a[epub|type="noteref"], a[epub\\:type="noteref"], sup.noteref, sup.footnote, a.footnote, a.noteref'
+    ):
+        t.decompose()
+    for t in soup.select('sup, [class*="super"], [style*="super"]'):
+        if not t.decomposed and _NOTE_MARKER_RE.match(t.get_text("", strip=True)):
+            t.decompose()
+
 
 
 def detect_trailing_footnotes(sentence: str) -> List[int]:
@@ -383,7 +419,7 @@ class EpubExtractor(BaseExtractor):
                 - min_block_words: int (default 30)
                 - preserve_hierarchy_across_docs: bool (default False)
                 - reset_depth: int (default 2)
-                - class_denylist: str regex (default "^(?:calibre\\d+|note|footnote)$")
+                - class_denylist: str regex (default "^(?:note|footnote)$")
         """
         super().__init__(epub_path, config or EpubExtractorConfig(), analyzer)
 
@@ -400,7 +436,7 @@ class EpubExtractor(BaseExtractor):
         )
         self.reset_depth = int(self.config.reset_depth)
         self.class_denylist_re = re.compile(
-            self.config.class_denylist or r"^(?:calibre\d+|note|footnote)$", re.I
+            self.config.class_denylist or r"^(?:note|footnote)$", re.I
         )
 
         # Tiny chunk filtering config
@@ -429,9 +465,21 @@ class EpubExtractor(BaseExtractor):
         """Load EPUB file and build TOC mapping."""
         LOGGER.info("Opening EPUB: %s", self.source_path)
         try:
-            self.__book = epub.read_epub(self.source_path)
+            reader = _MissingFileTolerantReader(self.source_path)
+            self.__book = reader.load()
+            reader.process()
         except Exception as e:
             raise ParseError(self.source_path, f"Failed to load EPUB: {e}")
+
+        if reader.missing:
+            missing_documents = [
+                item.file_name for item in self.__book.get_items()
+                if isinstance(item, epub.EpubHtml)
+                and posixpath.normpath(posixpath.join(reader.opf_dir, item.file_name)) in reader.missing
+            ]
+            if missing_documents:
+                raise ParseError(self.source_path, f"Failed to load EPUB: documents missing from archive: {missing_documents}")
+            LOGGER.warning("Manifest files missing from archive, loaded empty: %s", reader.missing)
 
         if not self.__book.spine:
             raise ParseError(self.source_path, "EPUB has no spine (reading order)")
@@ -698,10 +746,7 @@ class EpubExtractor(BaseExtractor):
         """Remove scripts, styles, footnote refs, and flatten small-caps."""
         for t in soup(["script", "style"]):
             t.decompose()
-        for t in soup.select(
-            'a[epub|type="noteref"], a[epub\\:type="noteref"], sup.noteref, sup.footnote, a.footnote, a.noteref'
-        ):
-            t.decompose()
+        remove_note_markers(soup)
         for br in soup.find_all("br"):
             br.replace_with(" ")
         # flatten small-caps/dropcaps
@@ -819,6 +864,16 @@ class EpubExtractor(BaseExtractor):
         """Reset hierarchy levels >= reset_depth."""
         for i in range(self.reset_depth, 7):
             self.current_hierarchy[f"level_{i}"] = ""
+
+    def _clear_inherited_skippable_headings(self):
+        """A contents or index heading covers only the spine document that set it."""
+        from ..core.strategies import is_skippable_heading
+
+        for i in range(1, 7):
+            if is_skippable_heading(self.current_hierarchy[f"level_{i}"]):
+                for j in range(i, 7):
+                    self.current_hierarchy[f"level_{j}"] = ""
+                return
 
     def _set_heading_level(self, level: int, text: str):
         """Set heading at level and clear deeper levels."""
@@ -966,6 +1021,36 @@ class EpubExtractor(BaseExtractor):
         else:
             return 2
 
+    @staticmethod
+    def _class_tokens(el) -> List[str]:
+        classes = el.get("class") or []
+        return classes.split() if isinstance(classes, str) else list(classes)
+
+    def _class_denied(self, el) -> bool:
+        return any(self.class_denylist_re.search(c) for c in self._class_tokens(el))
+
+    _FALLBACK_INLINE = frozenset({
+        "span", "a", "em", "strong", "i", "b", "u", "s", "sup", "sub", "small", "big",
+        "font", "cite", "abbr", "code", "q", "mark", "td", "th",
+    })
+
+    def _fallback_text_groups(self, body) -> List[Tuple[str, str]]:
+        """Group each text node under its nearest non-inline ancestor, so every text node is emitted once.
+
+        Table cells count as inline, so a row's cells stay together.
+        """
+        groups: "OrderedDict[int, Tuple[str, List[str]]]" = OrderedDict()
+        for s in body.find_all(string=True):
+            if type(s) is not NavigableString:
+                continue
+            owner = s.parent
+            if any(is_heading_tag((p.name or "").lower()) for p in [owner, *owner.parents]):
+                continue
+            while owner is not body and (owner.name or "").lower() in self._FALLBACK_INLINE:
+                owner = owner.parent
+            groups.setdefault(id(owner), ((owner.name or "node").lower(), []))[1].append(str(s))
+        return [(tag, clean_text(" ".join(parts))) for tag, parts in groups.values()]
+
     def _process_document(
         self, item, order_idx: int, global_para_id: int
     ) -> Tuple[str, int, str]:
@@ -998,6 +1083,7 @@ class EpubExtractor(BaseExtractor):
 
         if not self.preserve_hierarchy_across_docs:
             self._reset_lower_hierarchy()
+        self._clear_inherited_skippable_headings()
 
         toc_title = self.href_to_toc_title.get(href, "")
         toc_depth = self.href_to_toc_depth.get(href, 1)
@@ -1027,7 +1113,7 @@ class EpubExtractor(BaseExtractor):
                 f"level_{i}": self.current_hierarchy[f"level_{i}"] for i in range(1, 7)
             }
 
-        def flush_paragraph(text: str, source_tag: str) -> None:
+        def flush_paragraph(text: str, source_tag: str, classes: Optional[List[str]] = None) -> None:
             nonlocal global_para_id
             if source_tag == "pre":
                 text = clean_code_text(text)
@@ -1041,16 +1127,6 @@ class EpubExtractor(BaseExtractor):
             # OPTIONAL: strip enumerators at start of NOTES items
             if any(x == "NOTES" for x in h.values()):
                 text = re.sub(r"^\s*(?:\d+|[IVXLC]+)\s*[.)]?\s*", "", text)
-
-            # micro de-dup: skip if new text fully contained in previous chunk from same spine item
-            last = self.chunks_dict[-1] if self.chunks_dict else None
-            if (
-                last
-                and last["chapter_href"] == href
-                and last["source_order"] == order_idx
-            ):
-                if text and (text == last["text"] or text in last["text"]):
-                    return
 
             # --- sentence split + footnote detection
             sents = split_sentences(text)
@@ -1084,6 +1160,8 @@ class EpubExtractor(BaseExtractor):
                 "hierarchy_depth": hierarchy_depth(h),
                 "doc_stable_id": self.provenance.doc_id,
             }
+            if classes:
+                chunk["source_classes"] = classes
             # Attach sentences and normalized text
             chunk["sentence_count"] = len(sents)
             chunk["sentences"] = sents
@@ -1144,14 +1222,24 @@ class EpubExtractor(BaseExtractor):
             "strong",
         }
         INLINE_TAGS = {"span", "a", "em", "strong"}
+        LEAF_BLOCKERS = list(BLOCK_TAGS - INLINE_TAGS)
         BLOCK_PARENTS = {"p", "li", "blockquote", "pre", "figure"}
         texts_for_doc_hash: List[str] = []
+        consumed: set = set()
+
+        def flush_element(el, text: str, source_tag: str) -> None:
+            consumed.update(
+                id(d) for d in el.find_all(BLOCK_TAGS) if not is_heading_tag((d.name or "").lower())
+            )
+            flush_paragraph(text, source_tag, self._class_tokens(el))
 
         for el in body.find_all(BLOCK_TAGS, recursive=True):
             # Check for TOC anchors to update hierarchy (important for single-file EPUBs)
             check_anchor_hierarchy(el)
 
             tag = (el.name or "").lower()
+            if id(el) in consumed:
+                continue
             if is_heading_tag(tag):
                 htxt = clean_text(el.get_text())
                 if htxt:
@@ -1173,8 +1261,11 @@ class EpubExtractor(BaseExtractor):
             if tag in INLINE_TAGS and el.find_parent(tuple(BLOCK_PARENTS)):
                 continue
 
-            classes = " ".join(el.get("class", []))
-            if classes and self.class_denylist_re.search(classes):
+            if self._class_denied(el):
+                consumed.update(id(d) for d in el.find_all(BLOCK_TAGS))
+                denied_text = clean_text(el.get_text())
+                if denied_text:
+                    self._record_excluded(denied_text, "class_denylist")
                 continue
 
             if tag == "pre":
@@ -1192,9 +1283,9 @@ class EpubExtractor(BaseExtractor):
             if tag == "li":
                 has_nested_blocks = el.find(['p', 'blockquote', 'pre', 'figure', 'div'])
                 if not has_nested_blocks:
-                    flush_paragraph(f"• {txt}", "li")
+                    flush_element(el, f"• {txt}", "li")
             elif tag in {"p", "blockquote", "pre", "figure"}:
-                flush_paragraph(txt, tag)
+                flush_element(el, txt, tag)
             elif tag in {
                 "section",
                 "article",
@@ -1210,11 +1301,11 @@ class EpubExtractor(BaseExtractor):
             }:
                 # Only extract container tags if they're leaf nodes (no nested extractable elements)
                 # This prevents extracting wrapper divs/spans that contain nested content
-                has_nested_extractables = el.find(list(BLOCK_TAGS))
+                has_nested_extractables = el.find(LEAF_BLOCKERS)
                 if not has_nested_extractables and estimate_word_count(txt) >= max(
                     2 * self.min_paragraph_words, self.min_block_words
                 ):
-                    flush_paragraph(txt, tag)
+                    flush_element(el, txt, tag)
 
         # Fixed windows for route C
         fixed_text = " ".join(texts_for_doc_hash)
@@ -1251,12 +1342,9 @@ class EpubExtractor(BaseExtractor):
         ]
 
         if not current_doc_chunks:
-            for el in soup.find_all(True, recursive=True):
-                if is_heading_tag((el.name or "").lower()):
-                    continue
-                txt = clean_text(el.get_text())
+            for group_tag, txt in self._fallback_text_groups(body):
                 if txt and estimate_word_count(txt) >= max(3, self.min_paragraph_words):
-                    flush_paragraph(txt, f"fallback:{(el.name or 'node')}")
+                    flush_paragraph(txt, f"fallback:{group_tag}")
 
         # Optional debug dump (prefixed with file base)
         if self.debug_dump:
@@ -1519,4 +1607,5 @@ class EpubExtractor(BaseExtractor):
                 "route": self.route,
                 "quality_score": round(self.quality_score, 4),
             },
+            "unit_report": self.unit_report,
         }

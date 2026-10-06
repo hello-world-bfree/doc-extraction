@@ -1,14 +1,16 @@
 """Main annotation screen."""
 
-from textual.app import ComposeResult
-from textual.screen import Screen
-from textual.containers import Horizontal, Vertical, Container
-from textual.widgets import Header, Footer, Static
-from textual.binding import Binding
-from textual.reactive import reactive
+from typing import Optional
 
-from ..widgets import ChunkDisplay, MetadataPanel, IssueTracker, QualityLabel
+from textual.app import ComposeResult
+from textual.binding import Binding
+from textual.containers import Container, Horizontal, Vertical
+from textual.reactive import reactive
+from textual.screen import Screen
+from textual.widgets import Footer, Header, Static
+
 from ..core.session import AnnotationSession
+from ..widgets import ChunkDisplay, IssueTracker, MetadataPanel, QualityLabel
 
 
 class AnnotationScreen(Screen):
@@ -24,6 +26,8 @@ class AnnotationScreen(Screen):
         Binding("s", "skip", "Skip", show=True),
         Binding("u", "undo", "Undo", show=True),
         Binding("e", "edit_chunk", "Edit", show=True),
+        Binding("S", "split_chunk", "Split", show=True),
+        Binding("M", "merge_with_next", "Merge", show=True),
         Binding("i", "toggle_issues", "Show Controls", show=True),
         Binding("r", "copy_chunk_info", "Report", show=True),
         Binding("tab", "focus_next", "Focus Next", show=False),
@@ -133,7 +137,7 @@ class AnnotationScreen(Screen):
         if chunk is None:
             return
 
-        source_file = chunk.get('metadata', {}).get('source_file', 'unknown')
+        source_file = chunk.get("metadata", {}).get("source_file", "unknown")
         progress = self.session.get_progress_percent()
 
         status_text = (
@@ -179,8 +183,16 @@ class AnnotationScreen(Screen):
             return
 
         issues = self.issue_tracker.get_selected_issues()
-        rationale = self.quality_label.rationale_input.value if self.quality_label.rationale_input else ""
-        confidence = self.quality_label.confidence_select.value if self.quality_label.confidence_select else None
+        rationale = (
+            self.quality_label.rationale_input.value
+            if self.quality_label.rationale_input
+            else ""
+        )
+        confidence = (
+            self.quality_label.confidence_select.value
+            if self.quality_label.confidence_select
+            else None
+        )
 
         self.session.set_annotation(
             label=label,
@@ -258,14 +270,22 @@ class AnnotationScreen(Screen):
             self.notify("No chunk to copy", severity="warning")
             return
 
-        chunk_id = chunk.get('stable_id') or chunk.get('chunk_id') or chunk.get('paragraph_id', 'N/A')
+        chunk_id = (
+            chunk.get("stable_id")
+            or chunk.get("chunk_id")
+            or chunk.get("paragraph_id", "N/A")
+        )
 
         try:
             import pyperclip
+
             pyperclip.copy(str(chunk_id))
             self.notify(f"Copied: {chunk_id}", severity="information")
         except ImportError:
-            self.notify(f"ID: {chunk_id} (pyperclip not installed for clipboard)", severity="information")
+            self.notify(
+                f"ID: {chunk_id} (pyperclip not installed for clipboard)",
+                severity="information",
+            )
 
     def action_copy_chunk_info(self) -> None:
         """Copy comprehensive chunk information for reporting issues."""
@@ -275,18 +295,24 @@ class AnnotationScreen(Screen):
             return
 
         # Build comprehensive chunk info
-        chunk_id = chunk.get('stable_id') or chunk.get('chunk_id') or chunk.get('paragraph_id', 'N/A')
-        paragraph_id = chunk.get('paragraph_id', 'N/A')
-        metadata = chunk.get('metadata', {})
-        source_file = metadata.get('source_file', 'unknown')
+        chunk_id = (
+            chunk.get("stable_id")
+            or chunk.get("chunk_id")
+            or chunk.get("paragraph_id", "N/A")
+        )
+        paragraph_id = chunk.get("paragraph_id", "N/A")
+        metadata = chunk.get("metadata", {})
+        source_file = metadata.get("source_file", "unknown")
 
         # Get hierarchy breadcrumb
-        hierarchy = chunk.get('hierarchy') or metadata.get('hierarchy', {})
-        breadcrumb = ' > '.join([v for v in hierarchy.values() if v]) if hierarchy else 'N/A'
+        hierarchy = chunk.get("hierarchy") or metadata.get("hierarchy", {})
+        breadcrumb = (
+            " > ".join([v for v in hierarchy.values() if v]) if hierarchy else "N/A"
+        )
 
         # Get text preview (first 200 chars)
-        text = chunk.get('text', '')
-        text_preview = text[:200] + '...' if len(text) > 200 else text
+        text = chunk.get("text", "")
+        text_preview = text[:200] + "..." if len(text) > 200 else text
 
         # Format the info
         info_lines = [
@@ -300,14 +326,18 @@ class AnnotationScreen(Screen):
             f'"{text_preview}"',
         ]
 
-        info_text = '\n'.join(info_lines)
+        info_text = "\n".join(info_lines)
 
         try:
             import pyperclip
+
             pyperclip.copy(info_text)
             self.notify("Copied chunk info to clipboard", severity="information")
         except ImportError:
-            self.notify(f"Chunk: {chunk_id}, Para: {paragraph_id} (pyperclip not installed)", severity="information")
+            self.notify(
+                f"Chunk: {chunk_id}, Para: {paragraph_id} (pyperclip not installed)",
+                severity="information",
+            )
 
     def action_edit_chunk(self) -> None:
         """Open edit modal for current chunk."""
@@ -318,45 +348,143 @@ class AnnotationScreen(Screen):
             self.notify("No chunk to edit", severity="warning")
             return
 
-        chunk_id = chunk.get('stable_id') or chunk.get('chunk_id')
+        chunk_id = chunk.get("stable_id") or chunk.get("chunk_id")
         if not chunk_id:
             self.notify("Chunk has no ID", severity="error")
             return
 
-        original_chunk = None
-        for c in self.session.chunks:
-            cid = c.get('stable_id') or c.get('chunk_id')
-            if cid == chunk_id:
-                original_chunk = c
-                break
-
-        if original_chunk is None:
-            self.notify("Could not find original chunk", severity="error")
-            return
-
-        original_text = original_chunk.get('text', '')
         current_edit = self.session.get_current_edit(chunk_id)
+        if current_edit is not None:
+            original_text = current_edit.original_text
+            original_hierarchy = current_edit.original_hierarchy or (
+                chunk.get("hierarchy")
+                or chunk.get("metadata", {}).get("hierarchy")
+                or {}
+            )
+        else:
+            original_text = chunk.get("text", "")
+            original_hierarchy = (
+                chunk.get("hierarchy")
+                or chunk.get("metadata", {}).get("hierarchy")
+                or {}
+            )
 
         def handle_edit_result(result):
             if result is not None:
                 edit = self.session.create_edit(
-                    chunk_id=result['chunk_id'],
-                    edited_text=result['edited_text'],
-                    edit_reason=result['edit_reason'],
+                    chunk_id=result["chunk_id"],
+                    edited_text=result["edited_text"],
+                    edit_reason=result["edit_reason"],
+                    edited_hierarchy=result.get("edited_hierarchy"),
                 )
 
                 if edit:
                     self.notify(
-                        f"Edit saved (version {edit.version})",
-                        severity="information"
+                        f"Edit saved (version {edit.version})", severity="information"
                     )
                     self.update_display()
                 else:
                     self.notify("Failed to save edit", severity="error")
 
         self.app.push_screen(
-            EditModal(chunk_id, original_text, current_edit),
-            callback=handle_edit_result
+            EditModal(chunk_id, original_text, current_edit, original_hierarchy=original_hierarchy),
+            callback=handle_edit_result,
+        )
+
+    def action_split_chunk(self) -> None:
+        """Open split modal for current chunk."""
+        from .split_modal import SplitModal
+
+        chunk = self.session.get_chunk()
+        if chunk is None:
+            self.notify("No chunk to split", severity="warning")
+            return
+
+        chunk_id = chunk.get("stable_id") or chunk.get("chunk_id")
+        if not chunk_id:
+            self.notify("Chunk has no ID", severity="error")
+            return
+
+        source_text = chunk.get("text", "")
+
+        def handle_split_result(result):
+            if result is None:
+                return
+            split = self.session.create_split(
+                chunk_id=result["chunk_id"],
+                segments=result["segments"],
+                split_reason=result["reason"],
+            )
+            if split is None:
+                self.notify(
+                    "Split failed (need >=2 non-empty segments + reason)",
+                    severity="error",
+                )
+                return
+            self.notify(
+                f"Split into {len(split.segments)} chunks (version {split.version})",
+                severity="information",
+            )
+            self.update_display()
+
+        self.app.push_screen(
+            SplitModal(chunk_id, source_text),
+            callback=handle_split_result,
+        )
+
+    def action_merge_with_next(self) -> None:
+        """Open merge modal for current + next chunk."""
+        from .merge_modal import MergeModal
+
+        idx = self.session.current_index
+        if idx + 1 >= len(self.session.view_order):
+            self.notify("No next chunk to merge with", severity="warning")
+            return
+
+        cur_id, cur_seg = self.session.view_order[idx]
+        nxt_id, nxt_seg = self.session.view_order[idx + 1]
+
+        if cur_seg is not None or nxt_seg is not None:
+            self.notify("Merge requires two root chunks (no split children in MVP)", severity="warning")
+            return
+
+        root_ids = {(c.get('stable_id') or c.get('chunk_id')) for c in self.session.chunks}
+        if cur_id not in root_ids or nxt_id not in root_ids:
+            self.notify("Merge requires two root chunks (no merged/split entries)", severity="warning")
+            return
+
+        cur_chunk = self.session.get_chunk(idx)
+        nxt_chunk = self.session.get_chunk(idx + 1)
+        if cur_chunk is None or nxt_chunk is None:
+            self.notify("Could not load chunks for merge", severity="error")
+            return
+
+        chunk_ids = [cur_id, nxt_id]
+        source_texts = [cur_chunk.get("text", ""), nxt_chunk.get("text", "")]
+
+        def handle_merge_result(result):
+            if result is None:
+                return
+            merge = self.session.create_merge(
+                chunk_ids=result["chunk_ids"],
+                merge_reason=result["reason"],
+                separator=result["separator"],
+            )
+            if merge is None:
+                self.notify(
+                    "Merge failed (need >=2 adjacent roots, no splits, reason required)",
+                    severity="error",
+                )
+                return
+            self.notify(
+                f"Merged {len(merge.parent_chunk_ids)} chunks (version {merge.version})",
+                severity="information",
+            )
+            self.update_display()
+
+        self.app.push_screen(
+            MergeModal(chunk_ids, source_texts),
+            callback=handle_merge_result,
         )
 
     def action_export(self) -> None:

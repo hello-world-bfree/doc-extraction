@@ -76,7 +76,7 @@ See [EpubExtractorConfig](../configuration.md#epubextractorconfig) for full refe
 | `preserve_hierarchy_across_docs` | `False` | Preserve hierarchy across spine documents |
 | `reset_depth` | `2` | Clear levels ≥ this depth at doc boundaries (if not preserving) |
 | `filter_tiny_chunks` | `"conservative"` | Tiny chunk filtering: `off`, `conservative`, `standard`, `aggressive` |
-| `class_denylist` | `r"^(?:calibre\d+\|note\|footnote)$"` | Regex for CSS classes to exclude |
+| `class_denylist` | `r"^(?:note\|footnote)$"` | Regex for CSS classes to exclude |
 
 ## Public Methods
 
@@ -422,19 +422,20 @@ Excludes elements with specific CSS classes.
 ### Default Pattern
 
 ```python
-class_denylist = r"^(?:calibre\d+|note|footnote)$"
+class_denylist = r"^(?:note|footnote)$"
 ```
 
-**Matches**:
+**Matches** each class name of an element separately:
 
-- `calibre1`, `calibre2`, ... (Calibre artifacts)
 - `note`, `footnote` (Footnote references)
+
+`calibreN` classes are not denied by default: calibre assigns them to body paragraphs and spans.
 
 ### Custom Patterns
 
 ```python
 config = EpubExtractorConfig(
-    class_denylist=r"^(?:calibre\d+|note|footnote|sidebar|advertisement)$"
+    class_denylist=r"^(?:note|footnote|sidebar|advertisement)$"
 )
 ```
 
@@ -463,7 +464,7 @@ config = EpubExtractorConfig(
     # Filtering
     filter_tiny_chunks="standard",
     filter_noise=True,
-    class_denylist=r"^(?:calibre\d+|note|footnote)$",
+    class_denylist=r"^(?:note|footnote)$",
 
     # Extraction
     min_paragraph_words=6,

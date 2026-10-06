@@ -14,6 +14,7 @@ from typing import Dict, Any
 _NUMBER_TOKEN_RE = re.compile(r'^[\d\*,\.\-:;]+$')
 _REFERENCE_PATTERN_RE = re.compile(r'(?:\d+[\*,\.\-:;\s]+){5,}')
 _DIGITS_RE = re.compile(r'\d+')
+_PARENTHETICAL_RE = re.compile(r'\([^()]*\)')
 _NAV_PATTERNS = [
     re.compile(r'^\s*(next|previous|home|back|forward|up)\s*$'),
     re.compile(r'^\s*(chapter|section|part)\s+\d+\s*$'),
@@ -112,9 +113,12 @@ class NoiseFilter:
         if number_ratio > 0.5:
             return True
 
-        if _REFERENCE_PATTERN_RE.search(text):
-            nums_in_text = len(_DIGITS_RE.findall(text))
-            if nums_in_text > len(tokens) * 0.3:
+        # Prose cites inside parentheses, "(1:78; 7:16; 19:44)"; reference lists do not.
+        # Counted with the parentheses in, scripture commentary paragraphs read as indexes.
+        outside = _PARENTHETICAL_RE.sub(' ', text)
+        if _REFERENCE_PATTERN_RE.search(outside):
+            nums_in_text = len(_DIGITS_RE.findall(outside))
+            if nums_in_text > len(outside.split()) * 0.3:
                 return True
 
         # Check 3: High token/word ratio (indicates special chars/symbols)

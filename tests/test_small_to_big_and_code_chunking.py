@@ -71,6 +71,7 @@ class TestSmallToBigOutput:
     def test_produces_parents_and_children(self):
         strategy = SmallToBigChunkingStrategy()
         config = TokenChunkConfig(
+            allow_word_estimate=True,
             max_tokens=200,
             min_tokens=1,
             overlap_percent=0.0,
@@ -87,6 +88,7 @@ class TestSmallToBigOutput:
     def test_parent_has_child_ids(self):
         strategy = SmallToBigChunkingStrategy()
         config = TokenChunkConfig(
+            allow_word_estimate=True,
             max_tokens=100,
             min_tokens=1,
             overlap_percent=0.0,
@@ -107,6 +109,7 @@ class TestSmallToBigOutput:
     def test_child_has_parent_id(self):
         strategy = SmallToBigChunkingStrategy()
         config = TokenChunkConfig(
+            allow_word_estimate=True,
             max_tokens=100,
             min_tokens=1,
             overlap_percent=0.0,
@@ -123,6 +126,7 @@ class TestSmallToBigOutput:
     def test_code_blocks_are_standalone(self):
         strategy = SmallToBigChunkingStrategy()
         config = TokenChunkConfig(
+            allow_word_estimate=True,
             max_tokens=200,
             min_tokens=1,
             overlap_percent=0.0,
@@ -136,7 +140,7 @@ class TestSmallToBigOutput:
 
     def test_child_stable_ids_deterministic(self):
         strategy = SmallToBigChunkingStrategy()
-        config = TokenChunkConfig(max_tokens=100, min_tokens=1, overlap_percent=0.0)
+        config = TokenChunkConfig(allow_word_estimate=True, max_tokens=100, min_tokens=1, overlap_percent=0.0)
         chunks = [_make_prose(i, 40) for i in range(1, 4)]
         result1 = strategy.apply(chunks, config)
         result2 = strategy.apply(chunks, config)

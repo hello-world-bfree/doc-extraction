@@ -70,7 +70,7 @@ These options are maintained for backward compatibility with legacy EPUB parsers
 | `--min-block-words WORDS` | Minimum words to chunk generic block tags (div, section, etc.). | `2` |
 | `--preserve-hierarchy` | Preserve heading hierarchy across EPUB spine documents. By default, hierarchy resets at document boundaries. | Disabled |
 | `--reset-depth DEPTH` | When hierarchy is **not** preserved, clear levels ≥ this depth (1-6) at document boundaries. | `2` |
-| `--deny-class REGEX` | Regex pattern for CSS classes to exclude (e.g., footnotes, calibre artifacts). | `^(?:calibre\d+\|note\|footnote)$` |
+| `--deny-class REGEX` | Regex pattern for CSS classes to exclude (e.g., footnotes). | `^(?:note\|footnote)$` |
 | `--filter-tiny-chunks {off\|conservative\|standard\|aggressive}` | Filter tiny chunks (&lt;5 words) as noise. See [Tiny Chunk Filtering](#tiny-chunk-filtering). | `conservative` |
 | `--no-filter-noise` | Disable semantic noise filtering (index pages, reference lists, boilerplate). By default, noise filtering is **enabled** across all formats. | Noise filtering enabled |
 | `--filter-small-chunks` | Filter out chunks below `min_chunk_words` instead of preserving them with quality flags. Default behavior preserves small chunks with `quality_flags: ["below_rag_minimum"]`. | Disabled |

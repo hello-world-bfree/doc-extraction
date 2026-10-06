@@ -121,5 +121,80 @@ def test_nested_structure_chunk_count():
         epub_path.unlink(missing_ok=True)
 
 
+def _raw_units(tmp_path: Path, body_html: str, **config_overrides) -> list[dict]:
+    extractor = _extract(tmp_path, body_html, **config_overrides)
+    return [r if isinstance(r, dict) else r.to_dict() for r in extractor._get_raw_chunks()]
+
+
+def _extract(tmp_path: Path, body_html: str, **config_overrides) -> EpubExtractor:
+    from extraction.extractors.configs import EpubExtractorConfig
+
+    book = epub.EpubBook()
+    book.set_identifier('synthetic')
+    book.set_title('Synthetic')
+    book.set_language('en')
+    chapter = epub.EpubHtml(title='Chapter 1', file_name='chap_01.xhtml', lang='en',
+                            content=f'<html><body><h1>Chapter 1</h1>{body_html}</body></html>')
+    book.add_item(chapter)
+    book.toc = (epub.Link('chap_01.xhtml', 'Chapter 1', 'chap1'),)
+    book.add_item(epub.EpubNcx())
+    book.add_item(epub.EpubNav())
+    book.spine = [chapter]
+    path = tmp_path / 'synthetic.epub'
+    epub.write_epub(str(path), book)
+
+    settings = dict(min_paragraph_words=1, min_block_words=2, detect_visual_headings=False,
+                    filter_tiny_chunks='off')
+    settings.update(config_overrides)
+    extractor = EpubExtractor(str(path), EpubExtractorConfig(**settings))
+    extractor.load()
+    extractor.parse()
+    return extractor
+
+
+QUOTE_ONE = 'Blessed are the poor in spirit, for theirs is the kingdom of heaven.'
+QUOTE_TWO = 'Blessed are those who mourn, for they shall be comforted in their sorrow.'
+PROSE = 'The author then turns from the beatitudes to the parable that follows them.'
+
+
+def test_blockquote_paragraphs_emitted_once(tmp_path):
+    """A quotation's text counted twice inflates the book and skews retrieval toward quoted passages."""
+    units = _raw_units(tmp_path, f'<blockquote><p>{QUOTE_ONE}</p><p>{QUOTE_TWO}</p></blockquote><p>{PROSE}</p>')
+    joined = '\n'.join(u['text'] for u in units)
+
+    for sentence in (QUOTE_ONE, QUOTE_TWO, PROSE):
+        assert joined.count(sentence) == 1, sentence
+
+
+def test_div_with_inline_children_emitted_once_with_full_text(tmp_path):
+    """Publishers that mark paragraphs as divs with emphasis lost those paragraphs entirely (Walking With God)."""
+    units = _raw_units(
+        tmp_path,
+        '<div class="para">Grace builds on <em>nature</em> and does not <span class="sc">destroy</span> it.</div>'
+        f'<div class="para">{PROSE}</div>',
+    )
+    texts = [u['text'] for u in units]
+
+    assert 'Grace builds on nature and does not destroy it.' in texts
+    assert PROSE in texts
+    assert '\n'.join(texts).count('destroy') == 1
+
+
+def test_fallback_walk_emits_each_text_node_once(tmp_path):
+    """A document reached only by the fallback walk must not repeat a row once per enclosing element."""
+    rows = [('Gen', 'Genesis, the book of origins'), ('Exod', 'Exodus, the book of departure'),
+            ('Lev', 'Leviticus, the book of priests')]
+    table = ''.join(f'<tr><td>{a}</td><td>{b}</td></tr>' for a, b in rows)
+    units = _raw_units(tmp_path, f'<div><table>{table}</table></div>', min_block_words=50)
+
+    fallback = [u for u in units if u['source_tag'].startswith('fallback:')]
+    assert fallback, 'expected the document to reach the fallback walk'
+    joined = '\n'.join(u['text'] for u in units)
+    for abbrev, name in rows:
+        assert joined.count(name) == 1, name
+    texts = [u['text'] for u in fallback]
+    assert not any(a != b and a in b for a in texts for b in texts)
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])

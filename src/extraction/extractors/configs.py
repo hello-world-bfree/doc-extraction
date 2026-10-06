@@ -9,8 +9,8 @@ options. Validation happens in __post_init__ to catch errors early.
 """
 
 import re
-from dataclasses import dataclass
-from typing import List, Literal, Optional
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Literal, Optional
 
 from ..exceptions import InvalidConfigValueError
 
@@ -38,6 +38,11 @@ class BaseExtractorConfig:
     overlap_percent: float = 0.10
     code_max_tokens: int = 256
     tokenizer_name: str = "google/embeddinggemma-300m"
+    allow_word_estimate: bool = False
+    structural_rules: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    unit_judge: Optional[Any] = None
+    judge_drop_threshold: float = 0.2
+    judge_keep_threshold: float = 0.8
 
     def __post_init__(self):
         if self.chunking_strategy not in _VALID_STRATEGIES:
@@ -99,6 +104,13 @@ class BaseExtractorConfig:
                 "code_max_tokens", self.code_max_tokens, "Must be >= 1"
             )
 
+        if not (0 <= self.judge_drop_threshold < self.judge_keep_threshold <= 1):
+            raise InvalidConfigValueError(
+                "judge_drop_threshold",
+                (self.judge_drop_threshold, self.judge_keep_threshold),
+                "Must satisfy 0 <= drop < keep <= 1",
+            )
+
         if self.chunking_strategy in ("semantic", "embeddings"):
             self.chunking_strategy = "rag"
         elif self.chunking_strategy == "paragraph":
@@ -137,7 +149,7 @@ class EpubExtractorConfig(BaseExtractorConfig):
     min_block_words: int = 30
     preserve_hierarchy_across_docs: bool = False
     reset_depth: int = 2
-    class_denylist: str = r"^(?:calibre\d+|note|footnote)$"
+    class_denylist: str = r"^(?:note|footnote)$"
     filter_tiny_chunks: Literal["off", "conservative", "standard", "aggressive"] = "conservative"
     detect_visual_headings: bool = True
     visual_heading_font_threshold: float = 1.3

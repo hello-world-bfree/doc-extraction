@@ -31,6 +31,23 @@ class TestIndexPageDetection:
         chunk = {"text": "123 45* 678 91* 234 567* 890 12* 345"}
         assert NoiseFilter.is_index_page(chunk) is True
 
+    def test_allows_commentary_prose_citing_verses_in_parentheses(self):
+        """Scripture commentary cites in parentheses; the paragraph is body, not an index."""
+        chunk = {"text": (
+            "The first reason is that God has visited and brought redemption to his people. "
+            "God's visitation (1:78; 7:16; 19:44) means that he is present to bring assistance, "
+            "such as when Sarah conceived (Gen 21:1) and in the exodus (Gen 50:24-25; Exod 3:16; 13:19)."
+        )}
+        assert NoiseFilter.is_index_page(chunk) is False
+
+    def test_detects_cross_reference_list_without_parentheses(self):
+        """A bare reference list stays an index entry."""
+        for text in (
+            "NT: Matt 20:28; Rom 1:3; 15:16; 1 Cor 8:6; Gal 1:11-12; 2 Tim 1:11; Heb 8:6",
+            "vices, lists of, 1 Tim 1:9-10; 3:3, 8, 11; 5:13; 6:4-5, 9-10; 2 Tim 3:1-9; Titus 1:10, 15-16; 3:3",
+        ):
+            assert NoiseFilter.is_index_page({"text": text}) is True
+
 
 class TestCopyrightBoilerplate:
     """Tests for copyright boilerplate detection."""
