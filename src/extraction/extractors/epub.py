@@ -1061,7 +1061,9 @@ class EpubExtractor(BaseExtractor):
             raw_html = item.get_content()
             try:
                 # EPUB content is XHTML (XML), use lxml-xml parser
-                soup = BeautifulSoup(raw_html, "lxml-xml")
+                # The XML builder has no whitespace-preserving tags, so code indentation held in
+                # whitespace-only nodes between highlighting spans collapses to "\n" or " ".
+                soup = BeautifulSoup(raw_html, "lxml-xml", preserve_whitespace_tags={"pre", "textarea"})
             except Exception:
                 try:
                     # Fallback to HTML parser if XML parsing fails
